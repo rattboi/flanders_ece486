@@ -19,10 +19,17 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 }
 
 bool PREDICTOR::choose_predictor(const branch_record_c* br)
-// return of 0 (false) means use local history
-// return of 1 (true) means use global history
+// return of PRED_LOCAL means use local history
+// return of PRED_GLOBAL means use global history
 {
-    return ( cpt[phistory] & 2 ) >> 1;
+  uint16_t curr_cpt_entry;                      // holds current choice predict table entry
+
+  curr_cpt_entry = cpt[phistory];               // current cpt entry, indexed by path history
+  curr_cpt_entry = ( curr_cpt_entry & 2 );      // only care about bit 1 of saturating counter
+
+
+  if (curr_cpt_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
+  else                      return PRED_GLOBAL; // bit 1 was set
 }
 
 uint16_t PREDICTOR::mask_upper(uint16_t target, int keep_lower)
