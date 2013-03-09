@@ -120,22 +120,21 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   return;
 }
 
-bool PREDICTOR::choose_predictor(const branch_record_c* br)
 // return of PRED_LOCAL means use local history
 // return of PRED_GLOBAL means use global history
+bool PREDICTOR::choose_predictor(const branch_record_c* br)
 {
   uint16_t curr_cpt_entry;                      // holds current choice predict table entry
 
   curr_cpt_entry = cpt[phistory];               // current cpt entry, indexed by path history
   curr_cpt_entry = ( curr_cpt_entry & 2 );      // only care about bit 1 of saturating counter
 
-
   if (curr_cpt_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
   else                      return PRED_GLOBAL; // bit 1 was set
 }
 
-uint16_t PREDICTOR::keep_lower(uint16_t target, int n_bits)
 // keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
+uint16_t PREDICTOR::keep_lower(uint16_t target, int n_bits)
 {
-    return target & ((2^n_bits)-1);
+    return target & ((1<<n_bits)-1);
 }
