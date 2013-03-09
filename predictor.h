@@ -35,7 +35,7 @@ private:
 
     bool get_global_predict(const branch_record_c* br, uint *predicted_target_address);
 
-    bool get_choice_predict(const branch_record_c* br);
+    bool choose_predictor(const branch_record_c* br);
 };
 
 #endif // PREDICTOR_H_SEEN
