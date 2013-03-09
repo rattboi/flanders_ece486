@@ -1,5 +1,21 @@
 #include "predictor.h"
 
+PREDICTOR::PREDICTOR()
+{
+  for (int i = 0; i < SIZE_1K; i++)
+  {
+    lht[i] = 0;
+    lpt[i] = 0;
+  }
+
+  for (int i = 0; i < SIZE_4K; i++)
+  {
+    gpt[i] = 0;
+    cpt[i] = 0;
+  }
+  phistory = 0;
+}
+
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
 {
   uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
@@ -17,10 +33,13 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_ta
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  bool prediction = true;
+  bool prediction;
+  bool pred_choice = choose_predictor(br);
 
-  if (br->is_conditional)
-  prediction = false;
+  if (pred_choice == PRED_LOCAL)
+    prediction = get_local_predict(br, predicted_target_address);
+  else
+    prediction = get_global_predict(br, predicted_target_address);
 
   return prediction;   // true for taken, false for not taken
 }
