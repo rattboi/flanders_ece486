@@ -40,6 +40,11 @@ private:
 
   uint16_t old_pc;
 
+  bool pred_choice;
+  bool local_prediction;
+  bool global_prediction;
+  bool final_prediction;
+
   bool get_local_predict(const branch_record_c* br, uint *predicted_target_address);
 
   bool get_global_predict(const branch_record_c* br, uint *predicted_target_address);

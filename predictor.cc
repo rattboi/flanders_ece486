@@ -32,17 +32,19 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_ta
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  bool prediction;
-  bool pred_choice = choose_predictor(br);
+  pred_choice = choose_predictor(br);
 
   return false;
 
   old_pc = keep_lower(br->instruction_addr, 10); // keep this in case it differs during update
 
+  local_prediction = get_local_predict(br, predicted_target_address);
+  global_prediction = get_global_predict(br, predicted_target_address);
+
   if (pred_choice == PRED_LOCAL) //choose which predictor to use, local or global
-    prediction = get_local_predict(br, predicted_target_address);
+    prediction = local_predictionl
   else
-    prediction = get_global_predict(br, predicted_target_address);
+    prediction = global_prediction;
 
   return prediction;   // true for taken, false for not taken
 }
@@ -55,7 +57,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update local first
   uint16_t lht_ind = old_pc;
   uint16_t lp_ind = lht[lht_ind];
-  
+
   // update local prediction table
   if (taken)
   {
@@ -89,15 +91,15 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   if (taken)
   {
     if (cpt[phistory] < 3)
-      cpt[phistory]++;  
+      cpt[phistory]++;
   }
   else
   {
     if (cpt[phistory] > 0)
-      cpt[phistory]--; 
+      cpt[phistory]--;
   }
 
-  // update path history 
+  // update path history
   phistory = keep_lower((phistory << 1) | taken, 12);
 
   return;
