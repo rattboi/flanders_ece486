@@ -47,9 +47,10 @@ bool PREDICTOR::choose_predictor(const branch_record_c* br)
   else                      return PRED_GLOBAL; // bit 1 was set
 }
 
-uint16_t PREDICTOR::mask_upper(uint16_t target, int keep_lower)
+uint16_t PREDICTOR::keep_lower(uint16_t target, int n_bits)
+// keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
 {
-    switch (keep_lower)
+    switch (n_bits)
     {
         case 2:     return target & 3;
         case 3:     return target & 7;
