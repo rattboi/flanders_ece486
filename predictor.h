@@ -43,7 +43,7 @@ private:
   uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
 
                           //                                total = 3713.5 bytes = 3.62Kb
-  uint64_t btb[SIZE_4K];
+  uint64_t btb[SIZE_512];
 
   bool pred_choice;
 
@@ -60,7 +60,7 @@ private:
   bool choose_predictor(const branch_record_c* br);
 
   // keeps lower n_bits of target
-  uint16_t keep_lower(uint16_t target, int n_bits);
+  uint32_t keep_lower(uint32_t target, int n_bits);
 };
 #endif // PREDICTOR_H_SEEN
 

@@ -47,10 +47,10 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   if (final_prediction == TAKEN)
   {
-    if (btb[keep_lower(br->instruction_addr,12)] == 0)
+    if (btb[keep_lower(br->instruction_addr,9)] == 0)
       *predicted_target_address = br->instruction_next_addr;
     else
-      *predicted_target_address = btb[keep_lower(br->instruction_addr,12)];
+      *predicted_target_address = btb[keep_lower(br->instruction_addr,9)];
   }
   else
     *predicted_target_address = br->instruction_next_addr;
@@ -115,7 +115,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   phistory = keep_lower((phistory << 1) | taken, 12);
 
   // update BTB entry
-  btb[keep_lower(br->instruction_addr,12)] = actual_target_address;
+  btb[keep_lower(br->instruction_addr,9)] = actual_target_address;
 
   return;
 }
@@ -134,7 +134,7 @@ bool PREDICTOR::choose_predictor(const branch_record_c* br)
 }
 
 // keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
-uint16_t PREDICTOR::keep_lower(uint16_t target, int n_bits)
+uint32_t PREDICTOR::keep_lower(uint32_t target, int n_bits)
 {
     return target & ((1<<n_bits)-1);
 }
