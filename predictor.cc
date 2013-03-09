@@ -137,15 +137,5 @@ bool PREDICTOR::choose_predictor(const branch_record_c* br)
 uint16_t PREDICTOR::keep_lower(uint16_t target, int n_bits)
 // keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
 {
-    switch (n_bits)
-    {
-        case 2:     return target & 3;
-        case 3:     return target & 7;
-        case 9:     return target & 511;
-        case 10:    return target & 1023;
-        case 12:    return target & 4095;
-        default:    return 0;
-    }
-
-    return 0;
+    return target & ((2^n_bits)-1);
 }
