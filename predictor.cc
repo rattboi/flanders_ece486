@@ -34,10 +34,10 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 }
 
 bool PREDICTOR::choose_predictor(const branch_record_c* br)
+// return of 0 (false) means use local history
+// return of 1 (true) means use global history
 {
-
-    return false;
-
+    return ( cpt[phistory] & 2 ) >> 1;
 }
 
 uint16_t PREDICTOR::mask_upper(uint16_t target, int keep_lower)
