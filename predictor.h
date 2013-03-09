@@ -13,8 +13,11 @@
 #include "op_state.h"   // defines op_state_c (architectural state) class
 #include "tread.h"      // defines branch_record_c class
 
-#define size_1K 1<<10
-#define size_4K 1<<12
+#define SIZE_1K 2<<10
+#define SIZE_4K 2<<12
+
+#define PRED_LOCAL false
+#define PRED_GLOBAL true
 
 class PREDICTOR
 {
@@ -25,12 +28,12 @@ public:
 
 private:
 
-  uint16_t lht[size_1K];  //  local history table
-  uint16_t lpt[size_1K];  //  local prediction table
+    uint16_t lht[SIZE_1K]; //  local history table
+    uint16_t lpt[SIZE_1K]; //  local prediction table
 
-  uint16_t gpt[size_4K];  //  global predition table
+    uint16_t gpt[SIZE_4K]; //  global predition table
 
-  uint16_t cpt[size_4K];  //  choice predition table
+    uint16_t cpt[SIZE_4K]; //  choice predition table
 
   uint16_t phistory;      //  path history (only care about lower 12 bits)
 
@@ -43,8 +46,6 @@ private:
 
   uint16_t keep_lower(uint16_t target, int n_bits);
   // keeps lower n_bits of target
-
 };
-
 #endif // PREDICTOR_H_SEEN
 
