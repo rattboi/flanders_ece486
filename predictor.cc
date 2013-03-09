@@ -1,5 +1,20 @@
 #include "predictor.h"
 
+bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
+{
+  uint16_t lht_ind = mask_upper(br->instruction_addr, 10);
+  uint16_t lp_ind = lht[lht_ind];
+  uint16_t pred_bits = lpt[lp_ind];
+
+  return (pred_bits & 4)>>2;
+}
+
+bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_target_address)
+{
+  return (gpt[phistory]&2)>>1;
+}
+
+
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
   bool prediction = true;
