@@ -1,0 +1,13 @@
+Always Predict False
+
+DIST-FP-1
+1000*wrong_cc_bpredicts/total insts: 1000 *   412899 / 29499988 =  13.997
+
+DIST-INT-1
+1000*wrong_cc_bpredicts/total insts: 1000 *  1068045 / 29499987 =  36.205
+
+DIST-MM-1
+1000*wrong_cc_bpredicts/total insts: 1000 *   713587 / 29499979 =  24.189
+
+DIST-SERV1
+1000*wrong_cc_bpredicts/total insts: 1000 *  1111595 / 29499316 =  37.682
