@@ -30,13 +30,16 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_ta
   return (gpt[phistory]&2)>>1;
 }
 
-
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
   bool prediction;
   bool pred_choice = choose_predictor(br);
 
-  if (pred_choice == PRED_LOCAL)
+  return false;
+
+  old_pc = keep_lower(br->instruction_addr, 10); // keep this in case it differs during update
+
+  if (pred_choice == PRED_LOCAL) //choose which predictor to use, local or global
     prediction = get_local_predict(br, predicted_target_address);
   else
     prediction = get_global_predict(br, predicted_target_address);
@@ -49,7 +52,55 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 // argument (taken) indicating whether or not the branch was taken.
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
-    return;
+  // update local first
+  uint16_t lht_ind = old_pc;
+  uint16_t lp_ind = lht[lht_ind];
+  
+  // update local prediction table
+  if (taken)
+  {
+    if (lpt[lp_ind] < 7)
+      lpt[lp_ind]++;
+  }
+  else
+  {
+    if (lpt[lp_ind] > 0)
+      lpt[lp_ind]--;
+  }
+
+  // update local history table
+  lht[lht_ind] = keep_lower((lht[lht_ind] << 1) | taken, 10);
+
+  // update global now
+
+  // update global prediction table
+  if (taken)
+  {
+    if (gpt[phistory] < 3)
+      gpt[phistory]++;
+  }
+  else
+  {
+    if (gpt[phistory] > 0)
+      gpt[phistory]--;
+  }
+
+  // update prediction choice table
+  if (taken)
+  {
+    if (cpt[phistory] < 3)
+      cpt[phistory]++;  
+  }
+  else
+  {
+    if (cpt[phistory] > 0)
+      cpt[phistory]--; 
+  }
+
+  // update path history 
+  phistory = keep_lower((phistory << 1) | taken, 12);
+
+  return;
 }
 
 bool PREDICTOR::choose_predictor(const branch_record_c* br)
@@ -80,15 +131,3 @@ uint16_t PREDICTOR::keep_lower(uint16_t target, int n_bits)
 
     return 0;
 }
-
-
-//    branch_record_c();
-//    ~branch_record_c();
-//    void init();                   // init the branch record
-//    void debug_print();            // print the information in the branch record (for debugging)
-//    uint   instruction_addr;       // the branch's PC (program counter)
-//    uint   instruction_next_addr;  // the PC of the static instruction following the branch
-//    bool   is_indirect;            // true if the target is computed; false if it's PC-rel; returns are also considered indirect
-//    bool   is_conditional;         // true if the branch is conditional; false otherwise
-//    bool   is_call;                // true if the branch is a call; false otherwise
-//    bool   is_return;              // true if the branch is a return; false otherwise
