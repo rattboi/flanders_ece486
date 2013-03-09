@@ -29,16 +29,17 @@ public:
 
 private:
 
-  uint16_t lht[SIZE_1K]; //  local history table
-  uint16_t lpt[SIZE_1K]; //  local prediction table
+  uint16_t lht[SIZE_1K];  //  local history table (1024*10)/8     = 1280 bytes
+  uint16_t lpt[SIZE_1K];  //  local prediction table (1024*3)/8   = 384 bytes
 
-  uint16_t gpt[SIZE_4K]; //  global predition table
+  uint16_t gpt[SIZE_4K];  //  global predition table (4096*2)/8   = 1024 bytes
 
-  uint16_t cpt[SIZE_4K]; //  choice predition table
+  uint16_t cpt[SIZE_4K];  //  choice predition table (4096*2)/8   = 1024 bytes
 
-  uint16_t phistory;     //  path history (only care about lower 12 bits)
+  uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
 
   bool pred_choice;
+                          //                                total = 3713.5 bytes = 3.62Kb
 
   bool local_prediction;
   bool global_prediction;
