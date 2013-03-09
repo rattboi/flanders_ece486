@@ -36,6 +36,8 @@ private:
     bool get_global_predict(const branch_record_c* br, uint *predicted_target_address);
 
     bool choose_predictor(const branch_record_c* br);
+
+		uint16_t mask_upper(uint16_t target, int keep_lower);
 };
 
 #endif // PREDICTOR_H_SEEN

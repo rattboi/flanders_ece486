@@ -15,15 +15,30 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 // argument (taken) indicating whether or not the branch was taken.
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
-
+    return;
 }
 
 bool PREDICTOR::choose_predictor(const branch_record_c* br)
 {
-    uint16_t
 
+    return false;
 
 }
+
+uint16_t PREDICTOR::mask_upper(uint16_t target, int keep_lower)
+{
+    switch (keep_lower)
+    {
+        case 2:     return target & 3;
+        case 3:     return target & 7;
+        case 10:    return target & 1023;
+        case 12:    return target & 4095;
+        default:    return 0;
+    }
+
+    return 0;
+}
+
 
 //    branch_record_c();
 //    ~branch_record_c();
