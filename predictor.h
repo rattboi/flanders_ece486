@@ -15,9 +15,13 @@
 
 #define SIZE_1K 1<<10
 #define SIZE_4K 1<<12
+#define SIZE_512 1<<9
 
 #define PRED_LOCAL false
 #define PRED_GLOBAL true
+
+#define TAKEN true
+#define NOT_TAKEN false
 
 class PREDICTOR
 {
@@ -38,8 +42,10 @@ private:
 
   uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
 
-  bool pred_choice;
                           //                                total = 3713.5 bytes = 3.62Kb
+  uint64_t btb[SIZE_4K];
+
+  bool pred_choice;
 
   bool local_prediction;
   bool global_prediction;
@@ -50,11 +56,11 @@ private:
 
   bool get_global_predict(const branch_record_c* br, uint *predicted_target_address);
 
-  bool choose_predictor(const branch_record_c* br);
   // returns PRED_LOCAL or PRED GLOBAL indicating whether local or global history should be used
+  bool choose_predictor(const branch_record_c* br);
 
-  uint16_t keep_lower(uint16_t target, int n_bits);
   // keeps lower n_bits of target
+  uint16_t keep_lower(uint16_t target, int n_bits);
 };
 #endif // PREDICTOR_H_SEEN
 
