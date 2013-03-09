@@ -32,7 +32,6 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_ta
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  bool prediction; 
   pred_choice = choose_predictor(br);
 
   return false;
@@ -41,11 +40,12 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   global_prediction = get_global_predict(br, predicted_target_address);
 
   if (pred_choice == PRED_LOCAL) //choose which predictor to use, local or global
-    prediction = local_prediction;
-  else
-    prediction = global_prediction;
+    final_prediction = local_prediction;
 
-  return prediction;   // true for taken, false for not taken
+  else
+    final_prediction = global_prediction;
+
+  return final_prediction;   // true for taken, false for not taken
 }
 
 // Update the predictor after a prediction has been made.  This should accept
@@ -87,7 +87,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   }
 
   // update prediction choice table
-  if (taken)
+  if (taken != final_prediction)
   {
     if (cpt[phistory] < 3)
       cpt[phistory]++;

@@ -39,8 +39,10 @@ private:
   uint16_t phistory;     //  path history (only care about lower 12 bits)
 
   bool pred_choice;
+
   bool local_prediction;
   bool global_prediction;
+
   bool final_prediction;
 
   bool get_local_predict(const branch_record_c* br, uint *predicted_target_address);
