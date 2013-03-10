@@ -43,7 +43,7 @@ private:
   uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
 
                           //                                total = 3713.5 bytes = 3.62Kb
-  uint64_t btb[SIZE_512];
+  uint32_t btb[SIZE_1K];
 
   bool pred_choice;
 
