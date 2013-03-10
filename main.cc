@@ -23,7 +23,7 @@ main(int argc, char* argv[])
 
     cbp_trace_reader_c cbptr = cbp_trace_reader_c(argv[1]);
     branch_record_c br;
-    uint targetaddress;		// predicted target address 
+    uint targetaddress;		// predicted target address
 
     // read the trace, one branch at a time, placing the branch info in br
     while (cbptr.get_branch_record(&br)) {
@@ -37,11 +37,14 @@ main(int argc, char* argv[])
 
         // predict_branch() tells the trace reader how you have predicted the branch and target address
         bool actual_taken    = cbptr.predict_branch(predicted_taken, &targetaddress);
-            
+
         // finally, update_predictor() is used to update your predictor with the
         // correct branch result
         predictor.update_predictor(&br, cbptr.osptr, actual_taken, targetaddress);
     }
+
+    for (int i=0; i<16; i++)
+        printf("stats[%i]=%i\n", i, predictor.stats[i]);
 }
 
 

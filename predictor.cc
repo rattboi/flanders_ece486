@@ -67,29 +67,14 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
   uint16_t lp_ind = lht[lht_ind];
 
-  printf("offset: %10x", actual_target_address - br->instruction_addr );
-  printf("\t");
+  stuff = 0;
 
-  printf("call:");
+  if (br->is_call)          stuff = stuff + 1;
+  if (br->is_conditional)   stuff = stuff + 2;
+  if (br->is_indirect)      stuff = stuff + 4;
+  if (br->is_return)        stuff = stuff + 8;
 
-  if (br->is_call) printf("y"); else printf("n");
-  printf("\t");
-
-  printf("cond:");
-  if (br->is_conditional) printf("y"); else printf("n");
-  printf("\t");
-
-
-  printf("ind:");
-  if (br->is_indirect) printf("y"); else printf("n");
-  printf("\t");
-
-  printf("is_return:");
-  if (br->is_return) printf("y"); else printf("n");
-
-  printf("\n");
-
-
+  stats[stuff]++;
 
   // update local prediction table
   if (taken)

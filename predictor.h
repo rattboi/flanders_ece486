@@ -31,6 +31,9 @@ public:
 
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
 
+  int stats[16];
+
+
 private:
 
   uint16_t lht[SIZE_1K];  //  local history table (1024*10)/8     = 1280 bytes
@@ -43,6 +46,10 @@ private:
   uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
 
                           //                                total = 3713.5 bytes = 3.62Kb
+
+  int stuff;
+
+
   uint64_t btb[SIZE_512];
 
   bool pred_choice;
