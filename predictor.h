@@ -33,6 +33,8 @@ public:
 
   int stats[16];
 
+  int stuff;
+
 
 private:
 

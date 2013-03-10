@@ -44,7 +44,7 @@ main(int argc, char* argv[])
     }
 
     for (int i=0; i<16; i++)
-        printf("stats[%i]=%i\n", i, predictor.stats[i]);
+        printf("stats[%x]=%i\n", i, predictor.stats[i]);
 }
 
 
