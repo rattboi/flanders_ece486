@@ -43,8 +43,15 @@ main(int argc, char* argv[])
         predictor.update_predictor(&br, cbptr.osptr, actual_taken, targetaddress);
     }
 
-    for (int i=0; i<16; i++)
-        printf("stats[%x]=%i\n", i, predictor.stats[i]);
+    //for (int i=0; i<16; i++)
+    //    if (predictor.stats[i]) printf("stats[%x]=%i\n", i, predictor.stats[i]);
+
+    printf("all false: \t%i\n", predictor.stats[0]);
+    printf("call:\t\t%i\n", predictor.stats[1]);
+    printf("conditional:\t%i\n", predictor.stats[2]);
+    printf("indirect:\t%i\n", predictor.stats[4]);
+    printf("call indirect:\t%i\n", predictor.stats[5]);
+    printf("return indirect:%i\n", predictor.stats[12]);
 }
 
 
