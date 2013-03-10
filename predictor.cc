@@ -15,7 +15,7 @@ PREDICTOR::PREDICTOR()
   }
   phistory = 0;
 
-  for (int i = 0; i < SIZE_512; i++)
+  for (int i = 0; i < SIZE_1K; i++)
     btb[i] = 0;
 }
 
@@ -47,10 +47,10 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   if (final_prediction == TAKEN)
   {
-    if (btb[keep_lower(br->instruction_addr,9)] == 0)
+    if (btb[keep_lower(br->instruction_addr,10)] == 0)
       *predicted_target_address = br->instruction_next_addr;
     else
-      *predicted_target_address = btb[keep_lower(br->instruction_addr,9)];
+      *predicted_target_address = btb[keep_lower(br->instruction_addr,10)];
   }
   else
     *predicted_target_address = br->instruction_next_addr;
@@ -124,7 +124,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   phistory = keep_lower((phistory << 1) | taken, 12);
 
   // update BTB entry
-  btb[keep_lower(br->instruction_addr,9)] = actual_target_address;
+  btb[keep_lower(br->instruction_addr,10)] = actual_target_address;
 
   return;
 }
