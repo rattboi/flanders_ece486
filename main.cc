@@ -47,16 +47,14 @@ main(int argc, char* argv[])
     //    if (predictor.stats[i]) printf("stats[%x]=%i\n", i, predictor.stats[i]);
     double sum = predictor.stats[0] + predictor.stats[1] + predictor.stats[2] + predictor.stats[4] + predictor.stats[5] + predictor.stats[12];
 
-    printf("direct jumps: \t\t\t%lf\n", predictor.stats[0]/sum);
-    printf("unconditional direct call:\t%lf\n", predictor.stats[1]/sum);
-    printf("direct conditional branch:\t%lf\n", predictor.stats[2]/sum);
-    printf("indirect jump:\t\t\t%lf\n", predictor.stats[4]/sum);
-    printf("unconditional indirect call:\t%lf\n", predictor.stats[5]/sum);
-    printf("unconditional indirect return:\t%lf\n", predictor.stats[12]/sum);
+    printf("PC-relative   conditional (jump): %lf\n", 100*(predictor.stats[2]/sum));
+    printf("PC-relative unconditional (jump): %lf\n", 100*(predictor.stats[0]/sum));
+    printf("PC-relative unconditional call:   %lf\n", 100*(predictor.stats[1]/sum));
+    printf("Computed    unconditional return: %lf\n", 100*(predictor.stats[12]/sum));
+    printf("Computed    unconditional call:   %lf\n", 100*(predictor.stats[5]/sum));
+    printf("Computed    unconditional (jump): %lf\n", 100*(predictor.stats[4]/sum));
 
     printf("maxdisp = %x\n", predictor.maxdisp);
     printf("mindisp = %x\n", predictor.mindisp);
 }
-
-
 
