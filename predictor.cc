@@ -1,4 +1,7 @@
 #include "predictor.h"
+#define PC (br->instruction_addr)
+#define PC10 (keep_lower(br->instruction_addr,10))
+#define NEXT (br->instruction_next_addr)
 
 PREDICTOR::PREDICTOR()
 {
@@ -21,7 +24,7 @@ PREDICTOR::PREDICTOR()
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
+  uint16_t lht_ind = PC10;
   uint16_t lp_ind = lht[lht_ind];
   uint16_t pred_bits = lpt[lp_ind];
 
@@ -47,13 +50,13 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   if (final_prediction == TAKEN)
   {
-    if (btb[keep_lower(br->instruction_addr,10)] == 0)
-      *predicted_target_address = br->instruction_next_addr;
+    if (btb[PC10] == 0)
+      *predicted_target_address = NEXT;
     else
-      *predicted_target_address = btb[keep_lower(br->instruction_addr,10)];
+      *predicted_target_address = btb[PC10];
   }
   else
-    *predicted_target_address = br->instruction_next_addr;
+    *predicted_target_address = NEXT;
 
   return final_prediction;   // true for taken, false for not taken
 }
@@ -64,7 +67,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
   // update local first
-  uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
+  uint16_t lht_ind = PC10;
   uint16_t lp_ind = lht[lht_ind];
 
   // update local prediction table
@@ -115,7 +118,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   phistory = keep_lower((phistory << 1) | taken, 12);
 
   // update BTB entry
-  btb[keep_lower(br->instruction_addr,10)] = actual_target_address;
+  btb[PC10] = actual_target_address;
 
   return;
 }
