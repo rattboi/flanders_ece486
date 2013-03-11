@@ -35,6 +35,9 @@ public:
 
   int stuff;
 
+  int32_t maxdisp;
+  int32_t mindisp;
+
 
 private:
 

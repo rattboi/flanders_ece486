@@ -1,4 +1,5 @@
 #include "predictor.h"
+#include <cmath>
 
 PREDICTOR::PREDICTOR()
 {
@@ -45,6 +46,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   else
     final_prediction = global_prediction;
 
+
   if (final_prediction == TAKEN)
   {
     if (btb[keep_lower(br->instruction_addr,10)] == 0)
@@ -54,6 +56,12 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   }
   else
     *predicted_target_address = br->instruction_next_addr;
+
+
+  if(br->is_conditional == false && btb[keep_lower(br->instruction_addr,10)])
+  {
+    *predicted_target_address = btb[keep_lower(br->instruction_addr,10)];
+  }
 
   return final_prediction;   // true for taken, false for not taken
 }
@@ -66,6 +74,15 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update local first
   uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
   uint16_t lp_ind = lht[lht_ind];
+
+  if((br->is_conditional) && !(br->is_return) && br->instruction_addr < actual_target_address && actual_target_address - br->instruction_addr > maxdisp)
+    maxdisp = actual_target_address - br->instruction_addr;
+
+  if((br->is_conditional) && !(br->is_return) && br->instruction_addr > actual_target_address && br->instruction_addr - actual_target_address > mindisp)
+    mindisp = br->instruction_addr - actual_target_address;
+
+
+
 
   stuff = 0;
 
