@@ -47,14 +47,15 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   if (final_prediction == TAKEN)
   {
-    if (btb[keep_lower(br->instruction_addr,10)] == 0)
-      *predicted_target_address = br->instruction_next_addr;
-    else
-      *predicted_target_address = btb[keep_lower(br->instruction_addr,10)];
+    if ( br->is_indirect == false )  // is PC - relative
+        if ( btb_offset[keep_lower(br->instruction_addr, 10)] != 0)
+          *predicted_target_address += keep_lower(btb_offset[keep_lower(br->instruction_addr, 10)], 24);
   }
+
   else
     *predicted_target_address = br->instruction_next_addr;
 
+  *predicted_target_address = 0;
   return final_prediction;   // true for taken, false for not taken
 }
 
@@ -66,6 +67,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update local first
   uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
   uint16_t lp_ind = lht[lht_ind];
+
+  int32_t  diff;
 
   // update local prediction table
   if (taken)
@@ -114,9 +117,9 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update path history
   phistory = keep_lower((phistory << 1) | taken, 12);
 
-  // update BTB entry
-  btb[keep_lower(br->instruction_addr,10)] = actual_target_address;
 
+
+  btb_offset[keep_lower(br->instruction_addr,10)] = actual_target_address - br->instruction_addr;
   return;
 }
 
