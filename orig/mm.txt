@@ -1,6 +1,0 @@
-Old DIST-MM-1
-1000*wrong_cc_bpredicts/total insts: 1000 *   713587 / 29499979 =  24.189
-1000*wrong_tpredicts/total insts: 1000 *  2604565 / 29499979 =  88.290
-total branches:                   2784449
-total cc branches:                2229289
-total predicts:                   2229289

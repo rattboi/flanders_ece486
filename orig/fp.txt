@@ -1,7 +1,0 @@
-
-Old DIST-FP-1
-1000*wrong_cc_bpredicts/total insts: 1000 *   412899 / 29499988 =  13.997
-1000*wrong_tpredicts/total insts: 1000 *  2330565 / 29499988 =  79.002
-total branches:                   2616522
-total cc branches:                2213673
-total predicts:                   2213673
