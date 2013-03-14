@@ -30,6 +30,8 @@ public:
   bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
 
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
+  int btb_mispredicts;
+  bool btb_used;
 
 private:
 
@@ -61,6 +63,11 @@ private:
 
   // keeps lower n_bits of target
   uint32_t keep_lower(uint32_t target, int n_bits);
+
+  // garbage stuff
+  uint predicted_address;
+
 };
+
 #endif // PREDICTOR_H_SEEN
 

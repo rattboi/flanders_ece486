@@ -42,6 +42,8 @@ main(int argc, char* argv[])
         // correct branch result
         predictor.update_predictor(&br, cbptr.osptr, actual_taken, targetaddress);
     }
+
+    printf("Number of BTB mispredicts from table (aliasing): %i\n", predictor.btb_mispredicts);
 }
 
 
