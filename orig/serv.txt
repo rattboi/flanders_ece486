@@ -1,0 +1,2 @@
+Old DIST-SERV-1: 1000*wrong_cc_bpredicts/total insts: 37.682
+Old DIST-SERV-1: 1000*wrong_tpredicts/total insts:   103.668
