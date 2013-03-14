@@ -20,6 +20,9 @@ PREDICTOR::PREDICTOR()
 
   for (int i = 0; i < SIZE_1K; i++)
     btb[i] = 0;
+
+  btb_mispredicts = 0;
+  btb_used = false;
 }
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
@@ -53,10 +56,20 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
     if (btb[PC10] == 0)
       *predicted_target_address = NEXT;
     else
+    {
       *predicted_target_address = btb[PC10];
+      btb_mispredicts++;
+      btb_used = true;
+    }
   }
   else
     *predicted_target_address = NEXT;
+
+  predicted_address = *predicted_target_address;
+
+  predicted_address = *predicted_target_address;
+
+  predicted_address = *predicted_target_address;
 
   return final_prediction;   // true for taken, false for not taken
 }
@@ -119,6 +132,21 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   // update BTB entry
   btb[PC10] = actual_target_address;
+
+  if (predicted_address == actual_target_address && btb_used)
+    btb_mispredicts--;
+
+  btb_used = false;
+
+  if (predicted_address == actual_target_address && btb_used)
+    btb_mispredicts--;
+
+  btb_used = false;
+
+  if (predicted_address == actual_target_address && btb_used)
+    btb_mispredicts--;
+
+  btb_used = false;
 
   return;
 }
