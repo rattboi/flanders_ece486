@@ -69,6 +69,8 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   predicted_address = *predicted_target_address;
 
+  predicted_address = *predicted_target_address;
+
   return final_prediction;   // true for taken, false for not taken
 }
 
@@ -130,6 +132,11 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   // update BTB entry
   btb[PC10] = actual_target_address;
+
+  if (predicted_address == actual_target_address && btb_used)
+    btb_mispredicts--;
+
+  btb_used = false;
 
   if (predicted_address == actual_target_address && btb_used)
     btb_mispredicts--;
