@@ -1,6 +1,7 @@
 #include "predictor.h"
 #define PC (br->instruction_addr)
 #define PC10 (keep_lower(br->instruction_addr,10))
+#define PC8 (keep_lower(br->instruction_addr,8))
 #define NEXT (br->instruction_next_addr)
 
 PREDICTOR::PREDICTOR()
@@ -43,18 +44,30 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   final_prediction = (pred_choice == PRED_LOCAL) ? local_prediction : global_prediction;
 
-  // the following logic may need to change
   if (final_prediction == TAKEN)
   {
-    if ( br->is_indirect == false )  // if branch is PC-relative
-      if ( btb_offset[PC10] != 0)  // and if we have something in the branch target buffer at this index
+    if(br->is_call == 0 && br->is_return == 0)
+    {
+      if ( br->is_indirect == false)  // if branch is PC-relative and if we have something in the branch target buffer at this index
       {
-        offset = keep_lower(btb_offset[PC10], 24);
-        offset = sign_extend24(offset);
-        *predicted_target_address = PC + offset;
+        if (btb_offset[PC10] != 0)
+          {
+            offset = keep_lower(btb_offset[PC10], 24);
+            offset = sign_extend24(offset);
+            *predicted_target_address = PC + offset;
+          }
       }
+
+      else  // branch is indirect
+        if ( ind_table[PC8] != 0 ) // indirect, not a call, not a return, and have element in indirect table
+          *predicted_target_address = ind_table[PC8];                 // give item
+    }
+    //
+    // handle calls and returns here
+    //
   }
-  else
+
+  else // branch not taken
     *predicted_target_address = NEXT;
 
   return final_prediction;   // true for taken, false for not taken
@@ -113,9 +126,13 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update global path history (shift left, OR with 'taken', then keep only 10 bits)
   phistory = keep_lower((phistory << 1) | taken, 12);
 
-  if (br->is_indirect == false)
-    btb_offset[PC10] = keep_lower(actual_target_address - br->instruction_addr,24);
-
+  if ( br->is_call == 0 && br->is_return == 0 )
+  {
+    if (br->is_indirect == false)
+      btb_offset[PC10] = keep_lower(actual_target_address - br->instruction_addr,24);
+    else
+      ind_table[PC8] = PC;
+  }
   return;
 }
 
