@@ -22,7 +22,7 @@ PREDICTOR::PREDICTOR()
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  uint16_t pred_bits = lpt[PC10];
+  uint16_t pred_bits = lpt[lht[PC10]];
   return (pred_bits & 4)>>2;
 }
 
