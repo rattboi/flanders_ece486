@@ -22,7 +22,8 @@ PREDICTOR::PREDICTOR()
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  uint16_t pred_bits = lpt[lht[PC10]];
+  uint16_t lp_ind = lht[PC10];
+  uint16_t pred_bits = lpt[lp_ind];
   return (pred_bits & 4)>>2;
 }
 
@@ -36,15 +37,12 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   // if not conditional, predict taken here
 
-  local_prediction = get_local_predict(br, predicted_target_address);
-  global_prediction = get_global_predict(br, predicted_target_address);
+  local_prediction  = get_local_predict  (br, predicted_target_address);
+  global_prediction = get_global_predict (br, predicted_target_address);
 
   pred_choice = choose_predictor(br);
 
-  if (pred_choice == PRED_LOCAL) //choose which predictor to use, local or global
-    final_prediction = local_prediction;
-  else
-    final_prediction = global_prediction;
+  final_prediction = (pred_choice == PRED_LOCAL) ? local_prediction : global_prediction;
 
   // the following logic may need to change
   if (final_prediction == TAKEN)
@@ -53,7 +51,6 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
         if ( btb_offset[PC10] != 0)
           *predicted_target_address += keep_lower(btb_offset[PC10], 24);
   }
-
   else
     *predicted_target_address = NEXT;
 
@@ -114,7 +111,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update global path history (shift left, OR with 'taken', then keep only 10 bits)
   phistory = keep_lower((phistory << 1) | taken, 12);
 
-  btb_offset[PC10] = actual_target_address - br->instruction_addr;
+  btb_offset[PC10] = keep_lower(actual_target_address - br->instruction_addr,24);
 
   return;
 }
