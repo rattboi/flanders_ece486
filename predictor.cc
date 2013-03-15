@@ -7,42 +7,65 @@ PREDICTOR::PREDICTOR()
 {
   for (int i = 0; i < SIZE_1K; i++)
   {
-    alpha_lht[i] = 0;
-    alpha_lpt[i] = 0;
+    lht[i] = 0;
+    lpt[i] = 0;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
   {
-    alpha_gpt[i] = 0;
-    alpha_choice[i] = 2;
+    gpt[i] = 0;
+    cpt[i] = 2;
   }
   phistory = 0;
 
+  for (int i = 0; i < SIZE_1K; i++)
+    btb[i] = 0;
+
+  btb_mispredicts = 0;
+  btb_used = false;
 }
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  uint16_t alpha_lht_ind = PC10;
-  uint16_t curr = alpha_lht[alpha_lht_ind];
-  uint16_t pred_bits = alpha_lpt[curr];
+  uint16_t lht_ind = PC10;
+  uint16_t lp_ind = lht[lht_ind];
+  uint16_t pred_bits = lpt[lp_ind];
 
   return (pred_bits & 4)>>2;
 }
 
 bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  return (alpha_gpt[phistory]&2)>>1;
+  return (gpt[phistory]&2)>>1;
 }
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  //  ALPHA PREDICTION
   local_prediction = get_local_predict(br, predicted_target_address);
   global_prediction = get_global_predict(br, predicted_target_address);
-  pred_choice = choose_predictor(br);
-  final_prediction = (pred_choice == PRED_LOCAL) ? local_prediction : global_prediction;
 
-  //  TARGET PREDICTION
+  pred_choice = choose_predictor(br);
+
+  if (pred_choice == PRED_LOCAL) //choose which predictor to use, local or global
+    final_prediction = local_prediction;
+  else
+    final_prediction = global_prediction;
+
+  if (final_prediction == TAKEN)
+  {
+    if (btb[PC10] == 0)
+      *predicted_target_address = NEXT;
+    else
+    {
+      *predicted_target_address = btb[PC10];
+      btb_mispredicts++;
+      btb_used = true;
+    }
+  }
+  else
+    *predicted_target_address = NEXT;
+
+  predicted_address = *predicted_target_address;
 
   return final_prediction;   // true for taken, false for not taken
 }
@@ -52,45 +75,65 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 // argument (taken) indicating whether or not the branch was taken.
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
-  // ALPHA PREDICTOR UPDATE
-  uint16_t curr = alpha_lht[PC10];
+  // update local first
+  uint16_t lht_ind = PC10;
+  uint16_t lp_ind = lht[lht_ind];
 
-  // update prediction tables
+  // update local prediction table
   if (taken)
   {
-    if (alpha_lpt[curr] < 7)
-      alpha_lpt[curr]++;
-    if (alpha_gpt[phistory] < 3)
-      alpha_gpt[phistory]++;
+    if (lpt[lp_ind] < 7)
+      lpt[lp_ind]++;
   }
   else
   {
-    if (alpha_lpt[curr] > 0)
-      alpha_lpt[curr]--;
-    if (alpha_gpt[phistory] > 0)
-      alpha_gpt[phistory]--;
+    if (lpt[lp_ind] > 0)
+      lpt[lp_ind]--;
+  }
+
+  // update local history table
+  lht[lht_ind] = keep_lower((lht[lht_ind] << 1) | taken, 10);
+
+
+  // update global now
+  // update global prediction table
+  if (taken)
+  {
+    if (gpt[phistory] < 3)
+      gpt[phistory]++;
+  }
+  else
+  {
+    if (gpt[phistory] > 0)
+      gpt[phistory]--;
   }
 
   // update prediction choice table
-  if (taken != final_prediction && global_prediction != local_prediction) // misprediction occured, but one predictor was correct
+  if (taken != final_prediction && global_prediction != local_prediction)
   {
     if (taken == global_prediction)
     {
-      if (alpha_choice[phistory] < 3)
-        alpha_choice[phistory]++;
+      if (cpt[phistory] < 3)
+        cpt[phistory]++;
     }
     else
     {
-      if (alpha_choice[phistory] > 0)
-        alpha_choice[phistory]--;
+      if (cpt[phistory] > 0)
+        cpt[phistory]--;
     }
   }
 
   // update path history
   phistory = keep_lower((phistory << 1) | taken, 12);
 
-  // update local history table:  shift left, OR with taken, keep 10 bits
-  alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, 10);
+  // update BTB entry
+  if (taken)
+    btb[PC10] = actual_target_address;
+
+  if (predicted_address == actual_target_address && btb_used)
+    btb_mispredicts--;
+
+  btb_used = false;
 
   return;
 }
@@ -99,12 +142,12 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 // return of PRED_GLOBAL means use global history
 bool PREDICTOR::choose_predictor(const branch_record_c* br)
 {
-  uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
+  uint16_t curr_cpt_entry;                      // holds current choice predict table entry
 
-  curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
-  curr_alpha_choice_entry = ( curr_alpha_choice_entry & 2 );      // only care about bit 1 of saturating counter
+  curr_cpt_entry = cpt[phistory];               // current cpt entry, indexed by path history
+  curr_cpt_entry = ( curr_cpt_entry & 2 );      // only care about bit 1 of saturating counter
 
-  if (curr_alpha_choice_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
+  if (curr_cpt_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
   else                      return PRED_GLOBAL; // bit 1 was set
 }
 

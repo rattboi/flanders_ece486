@@ -35,18 +35,23 @@ public:
 
 private:
 
-  uint16_t alpha_lht[SIZE_1K];  //  local history table (1024*10)/8     = 1280 bytes
-  uint16_t alpha_lpt[SIZE_1K];  //  local prediction table (1024*3)/8   = 384 bytes
+  uint16_t lht[SIZE_1K];  //  local history table (1024*10)/8     = 1280 bytes
+  uint16_t lpt[SIZE_1K];  //  local prediction table (1024*3)/8   = 384 bytes
 
-  uint16_t alpha_gpt[SIZE_4K];  //  global predition table (4096*2)/8   = 1024 bytes
+  uint16_t gpt[SIZE_4K];  //  global predition table (4096*2)/8   = 1024 bytes
 
-  uint16_t alpha_choice[SIZE_4K];  //  choice predition table (4096*2)/8   = 1024 bytes
+  uint16_t cpt[SIZE_4K];  //  choice predition table (4096*2)/8   = 1024 bytes
 
-                          //                                total = 3713.5 bytes = 3712 bytes
-  uint32_t phistory;
+  uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
+
+                          //                                total = 3713.5 bytes = 3.62Kb
+  uint32_t btb[SIZE_1K];
+
   bool pred_choice;
+
   bool local_prediction;
   bool global_prediction;
+
   bool final_prediction;
 
   bool get_local_predict(const branch_record_c* br, uint *predicted_target_address);
@@ -58,6 +63,9 @@ private:
 
   // keeps lower n_bits of target
   uint32_t keep_lower(uint32_t target, int n_bits);
+
+  // garbage stuff
+  uint predicted_address;
 
 };
 
