@@ -9,7 +9,7 @@ PREDICTOR::PREDICTOR()
   {
     lht[i] = 0;
     lpt[i] = 0;
-    btb[i] = 0;
+    btb_offset[i] = 0;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
@@ -47,12 +47,12 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   if (final_prediction == TAKEN)
   {
     if ( br->is_indirect == false )  // if branch is PC-relative
-        if ( btb_offset[PC10] != 0)  // and if we have something in the branch target buffer at this index
-        {
-          offset = keep_lower(btb_offset[PC10], 24);
-          offset = sign_extend24(offset);
-          *predicted_target_address = PC + offset;
-        }
+      if ( btb_offset[PC10] != 0)  // and if we have something in the branch target buffer at this index
+      {
+        offset = keep_lower(btb_offset[PC10], 24);
+        offset = sign_extend24(offset);
+        *predicted_target_address = PC + offset;
+      }
   }
   else
     *predicted_target_address = NEXT;
@@ -113,7 +113,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update global path history (shift left, OR with 'taken', then keep only 10 bits)
   phistory = keep_lower((phistory << 1) | taken, 12);
 
-  btb_offset[PC10] = keep_lower(actual_target_address - br->instruction_addr,24);
+  if (br->is_indirect == false)
+    btb_offset[PC10] = keep_lower(actual_target_address - br->instruction_addr,24);
 
   return;
 }

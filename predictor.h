@@ -33,19 +33,14 @@ public:
 
 private:
 
-  uint16_t lht[SIZE_1K];  //  local history table (1024*10)/8     = 1280 bytes
-  uint16_t lpt[SIZE_1K];  //  local prediction table (1024*3)/8   = 384 bytes
-
-  uint16_t gpt[SIZE_4K];  //  global predition table (4096*2)/8   = 1024 bytes
-
-  uint16_t cpt[SIZE_4K];  //  choice predition table (4096*2)/8   = 1024 bytes
-
-  uint16_t phistory;      //  path history (only care about lower 12 bits) = (1.5 bytes)
-
-                          //                                total = 3713.5 bytes = 3.62Kb
-  uint32_t btb[SIZE_1K];
-
-  int32_t btb_offset[SIZE_1K];
+  uint16_t lht[SIZE_1K];  //  local history table (1024*10)/8     = 1280  bytes
+  uint16_t lpt[SIZE_1K];  //  local prediction table (1024*3)/8   = 384   bytes
+  uint16_t gpt[SIZE_4K];  //  global predition table (4096*2)/8   = 1024  bytes
+  uint16_t cpt[SIZE_4K];  //  choice predition table (4096*2)/8   = 1024  bytes
+  uint16_t phistory;      //  path history (only lower 12 bits)   = 1.5   bytes
+  int32_t btb_offset[SIZE_1K]; // pc-rel offsets (24b*1024)       = 3072  bytes
+                          //                                      = 6785.5/8192 bytes
+                                                                  // current remainder 1400
 
   bool pred_choice;
 
@@ -66,6 +61,8 @@ private:
 
   // manual sign extension of 24-bit data type
   uint32_t sign_extend24(uint32_t val_to_extend);
+
+  int pc_relative_branches;
 
 };
 #endif // PREDICTOR_H_SEEN
