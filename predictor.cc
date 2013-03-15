@@ -1,4 +1,7 @@
 #include "predictor.h"
+#define PC (br->instruction_addr)
+#define PC10 (keep_lower(br->instruction_addr,10))
+#define NEXT (br->instruction_next_addr)
 
 PREDICTOR::PREDICTOR()
 {
@@ -6,6 +9,7 @@ PREDICTOR::PREDICTOR()
   {
     lht[i] = 0;
     lpt[i] = 0;
+    btb[i] = 0;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
@@ -14,17 +18,11 @@ PREDICTOR::PREDICTOR()
     cpt[i] = 2;
   }
   phistory = 0;
-
-  for (int i = 0; i < SIZE_1K; i++)
-    btb[i] = 0;
 }
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
-  uint16_t lp_ind = lht[lht_ind];
-  uint16_t pred_bits = lpt[lp_ind];
-
+  uint16_t pred_bits = lpt[PC10];
   return (pred_bits & 4)>>2;
 }
 
@@ -35,6 +33,9 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_ta
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
+
+  // if not conditional, predict taken here
+
   local_prediction = get_local_predict(br, predicted_target_address);
   global_prediction = get_global_predict(br, predicted_target_address);
 
@@ -45,15 +46,16 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   else
     final_prediction = global_prediction;
 
+  // the following logic may need to change
   if (final_prediction == TAKEN)
   {
     if ( br->is_indirect == false )  // is PC - relative
-        if ( btb_offset[keep_lower(br->instruction_addr, 10)] != 0)
-          *predicted_target_address += keep_lower(btb_offset[keep_lower(br->instruction_addr, 10)], 24);
+        if ( btb_offset[PC10] != 0)
+          *predicted_target_address += keep_lower(btb_offset[PC10], 24);
   }
 
   else
-    *predicted_target_address = br->instruction_next_addr;
+    *predicted_target_address = NEXT;
 
   *predicted_target_address = 0;
   return final_prediction;   // true for taken, false for not taken
@@ -65,10 +67,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
   // update local first
-  uint16_t lht_ind = keep_lower(br->instruction_addr, 10);
-  uint16_t lp_ind = lht[lht_ind];
-
-  int32_t  diff;
+  uint16_t lp_ind = lht[PC10];
 
   // update local prediction table
   if (taken)
@@ -82,10 +81,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
       lpt[lp_ind]--;
   }
 
-  // update local history table
-  lht[lht_ind] = keep_lower((lht[lht_ind] << 1) | taken, 10);
-
-  // update global now
+  // update local history table (shift left, OR with 'taken,'' then keep only 10 bits)
+  lht[PC10] = keep_lower((lht[PC10] << 1) | taken, 10);
 
   // update global prediction table
   if (taken)
@@ -100,7 +97,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   }
 
   // update prediction choice table
-  if (taken != final_prediction && global_prediction != local_prediction)
+  if ((taken != final_prediction) && (global_prediction != local_prediction))
   {
     if (taken == global_prediction)
     {
@@ -114,12 +111,11 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     }
   }
 
-  // update path history
+  // update global path history (shift left, OR with 'taken', then keep only 10 bits)
   phistory = keep_lower((phistory << 1) | taken, 12);
 
+  btb_offset[PC10] = actual_target_address - br->instruction_addr;
 
-
-  btb_offset[keep_lower(br->instruction_addr,10)] = actual_target_address - br->instruction_addr;
   return;
 }
 
