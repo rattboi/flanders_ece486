@@ -34,8 +34,7 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_ta
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-
-  // if not conditional, predict taken here
+  int32_t offset;
 
   local_prediction  = get_local_predict  (br, predicted_target_address);
   global_prediction = get_global_predict (br, predicted_target_address);
@@ -47,14 +46,17 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   // the following logic may need to change
   if (final_prediction == TAKEN)
   {
-    if ( br->is_indirect == false )  // is PC - relative
-        if ( btb_offset[PC10] != 0)
-          *predicted_target_address += keep_lower(btb_offset[PC10], 24);
+    if ( br->is_indirect == false )  // if branch is PC-relative
+        if ( btb_offset[PC10] != 0)  // and if we have something in the branch target buffer at this index
+        {
+          offset = keep_lower(btb_offset[PC10], 24);
+          offset = sign_extend24(offset);
+          *predicted_target_address = PC + offset;
+        }
   }
   else
     *predicted_target_address = NEXT;
 
-  *predicted_target_address = 0;
   return final_prediction;   // true for taken, false for not taken
 }
 
@@ -133,4 +135,12 @@ bool PREDICTOR::choose_predictor(const branch_record_c* br)
 uint32_t PREDICTOR::keep_lower(uint32_t target, int n_bits)
 {
     return target & ((1<<n_bits)-1);
+}
+
+uint32_t PREDICTOR::sign_extend24(uint32_t val_to_extend)
+{
+  if (val_to_extend & 0x800000) // if first bit is set
+    return val_to_extend | 0xFF000000; // set upper bits
+  else
+    return val_to_extend;
 }

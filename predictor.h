@@ -63,6 +63,10 @@ private:
 
   // keeps lower n_bits of target
   uint32_t keep_lower(uint32_t target, int n_bits);
+
+  // manual sign extension of 24-bit data type
+  uint32_t sign_extend24(uint32_t val_to_extend);
+
 };
 #endif // PREDICTOR_H_SEEN
 
