@@ -25,6 +25,8 @@ main(int argc, char* argv[])
     branch_record_c br;
     uint targetaddress;		// predicted target address
 
+    //printf("\n(%d entries %d ways)\n", ENTRIES, WAYS);
+
     // read the trace, one branch at a time, placing the branch info in br
     while (cbptr.get_branch_record(&br)) {
 
@@ -43,7 +45,7 @@ main(int argc, char* argv[])
         predictor.update_predictor(&br, cbptr.osptr, actual_taken, targetaddress);
     }
 
-    printf("Number of BTB mispredicts from table (aliasing): %i\n", predictor.btb_mispredicts);
+
 }
 
 

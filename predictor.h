@@ -24,9 +24,9 @@
 #define NOT_TAKEN false
 
 
-#define ENTRIES 256   // number of entries in cache
-#define INDEX 8       //(logbase2(ENTRIES))    // log2()
-#define WAYS 3        // number of ways
+#define ENTRIES 32   // number of entries in cache
+#define INDEX 5       //(logbase2(ENTRIES))    // log2()
+#define WAYS 2        // number of ways
 
 int logbase2(int input);
 
@@ -39,9 +39,10 @@ public:
   uint tag[ENTRIES][WAYS];
   uint count[ENTRIES];
   bool needs_update;
+  bool line_full;
 
   bool predict(const branch_record_c* br, uint *predicted_target_address);
-  void update(const branch_record_c* br, uint actual_target_address);
+  bool update(const branch_record_c* br, uint actual_target_address);
 };
 
 class PREDICTOR
@@ -51,8 +52,6 @@ public:
   bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
 
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
-  int btb_mispredicts;
-  bool btb_used;
 private:
 
   // ALPHA STUFF
