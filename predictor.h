@@ -7,6 +7,7 @@
 #define PREDICTOR_H_SEEN
 
 #include <cstddef>
+#include <iostream>
 #include <cstring>
 #include <inttypes.h>
 #include <vector>
@@ -32,7 +33,7 @@ class RAS
     bool push_call(uint32_t address);
 
   private:
-    std::deque<uint32_t> stack;
+    std::deque<uint> stack;
     unsigned long stack_size;
 };
 
@@ -76,6 +77,8 @@ private:
 
   // keeps lower n_bits of target
   uint32_t keep_lower(uint32_t target, int n_bits);
+
+  uint predicted_address;
 };
 
 #endif // PREDICTOR_H_SEEN

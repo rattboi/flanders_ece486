@@ -3,13 +3,15 @@
 #define PC10 (keep_lower(br->instruction_addr,10))
 #define NEXT (br->instruction_next_addr)
 
-RAS::RAS(unsigned long maxsize = 64): stack_size(maxsize) { };
+using namespace std;
 
-uint32_t RAS::pop_ret_pred()
+RAS::RAS(unsigned long maxsize = 32): stack_size(maxsize) { };
+
+uint RAS::pop_ret_pred()
 {
-  uint32_t retval;
+  uint retval;
 
-  if (stack.size() > 0)
+  if (!stack.empty())
   {
     retval = stack.front();
     stack.pop_front();
@@ -19,13 +21,15 @@ uint32_t RAS::pop_ret_pred()
     return 0;
 }
 
-bool RAS::push_call(uint32_t address)
+bool RAS::push_call(uint address)
 {
-  
-  if (stack.size() == stack_size)
-    stack.pop_back();
-
   stack.push_front(address);
+
+  if (stack.size() == stack_size)
+  {
+    stack.pop_back();
+    return false;
+  }
 
   return true;
 }
@@ -68,10 +72,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   local_prediction = get_local_predict(br, predicted_target_address);
   global_prediction = get_global_predict(br, predicted_target_address);
 
-  if (choose_predictor(br) == PRED_LOCAL) //choose which predictor to use, local or global
-    final_prediction = local_prediction;
-  else
-    final_prediction = global_prediction;
+  final_prediction = (choose_predictor(br) == PRED_LOCAL) ? local_prediction : global_prediction;
 
   if (final_prediction == TAKEN)
   {
@@ -113,7 +114,6 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   // update local history table
   lht[lht_ind] = keep_lower((lht[lht_ind] << 1) | taken, 10);
 
-
   // update global now
   // update global prediction table
   if (taken)
@@ -147,12 +147,10 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   // update BTB entry
   if (br->is_call) //if a call is happening, save the next address to the RAS
-    ras.push_call(br->instruction_next_addr);
-  else // handle other kinds of addresses
-  {
-    if (taken)
-      btb[PC10] = actual_target_address;
-  }
+    ras.push_call(NEXT);
+
+  if (taken)
+    btb[PC10] = actual_target_address;
 
   return;
 }
