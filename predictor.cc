@@ -36,6 +36,7 @@ bool RAS::push_call(uint address)
 
 PREDICTOR::PREDICTOR()
 {
+  // set all our data structures to initial values
   for (int i = 0; i < SIZE_1K; i++)
   {
     lht[i] = 0;
@@ -45,8 +46,9 @@ PREDICTOR::PREDICTOR()
   for (int i = 0; i < SIZE_4K; i++)
   {
     gpt[i] = 0;
-    cpt[i] = 2;
+    cpt[i] = 2; //default to weakly global
   }
+
   phistory = 0;
 
   for (int i = 0; i < SIZE_1K; i++)
@@ -87,7 +89,10 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
 
-  return final_prediction;   // true for taken, false for not taken
+  if (!(br->is_conditional))
+    return TAKEN;
+  else 
+    return final_prediction;   // true for taken, false for not taken
 }
 
 // Update the predictor after a prediction has been made.  This should accept
