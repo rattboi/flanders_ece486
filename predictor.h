@@ -23,11 +23,12 @@
 #define TAKEN true
 #define NOT_TAKEN false
 
-#define ENTRIES 64
-#define INDEX 6
-#define WAYS 8
-#define WAYSBITS 3
 
+#define ENTRIES 256   // number of entries in cache
+#define INDEX 8       //(logbase2(ENTRIES))    // log2()
+#define WAYS 3        // number of ways
+
+int logbase2(int input);
 
 class CACHE
 {
@@ -77,5 +78,7 @@ private:
 
 // keeps lower n_bits of target
 uint32_t keep_lower(uint32_t target, int n_bits);
+
+
 
 #endif // PREDICTOR_H_SEEN

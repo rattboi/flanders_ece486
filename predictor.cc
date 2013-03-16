@@ -4,6 +4,17 @@
 #define NEXT (br->instruction_next_addr)
 #define PC_LOWER (keep_lower(PC,INDEX))
 
+int logbase2(int input)
+{
+  int result = 0;
+
+  if (input == 0) return 0;
+
+  while (input >>= 1) ++result;
+  return result;
+
+}
+
 PREDICTOR::PREDICTOR()
 {
   for (int i = 0; i < SIZE_1K; i++)
@@ -34,6 +45,10 @@ bool PREDICTOR::get_global_predict(const branch_record_c* br)
   }
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
+ // for (int j=0; j<2050; j+=2)
+ //   printf("logbase2 of %d: %d\n", j, logbase2(j));
+
+
   //  ALPHA PREDICTION
     local_prediction = get_local_predict(br);
     global_prediction = get_global_predict(br);
@@ -144,7 +159,13 @@ void CACHE::update(const branch_record_c* br, uint actual_target_address)
   uint victim = count[PC_LOWER];  // read out the current victim
   tag[PC_LOWER][victim] = PC >> INDEX;  // use overwrite victim's tag field
   data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
-  count[PC_LOWER] = (victim++) % WAYS;    // point to next victim
+
+  // this if/else structure allows non power-of-2 values to be used for ways
+  if (victim == WAYS)
+    count[PC_LOWER] = 0;
+  else
+    count[PC_LOWER] = victim++;
+
   return;
 
 
@@ -158,3 +179,4 @@ uint32_t keep_lower(uint32_t target, int n_bits)
 {
     return target & ((1<<n_bits)-1);
 }
+
