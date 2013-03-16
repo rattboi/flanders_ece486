@@ -10,6 +10,7 @@
 #include <cstring>
 #include <inttypes.h>
 #include <vector>
+#include <deque>
 #include "op_state.h"   // defines op_state_c (architectural state) class
 #include "tread.h"      // defines branch_record_c class
 
@@ -23,6 +24,18 @@
 #define TAKEN true
 #define NOT_TAKEN false
 
+class RAS
+{
+  public:
+    RAS(unsigned long maxsize);
+    uint32_t pop_ret_pred();
+    bool push_call(uint32_t address);
+
+  private:
+    std::deque<uint32_t> stack;
+    unsigned long stack_size;
+};
+
 class PREDICTOR
 {
 public:
@@ -30,8 +43,6 @@ public:
   bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
 
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
-  int btb_mispredicts;
-  bool btb_used;
 
 private:
 
@@ -46,6 +57,8 @@ private:
 
                           //                                total = 3713.5 bytes = 3.62Kb
   uint32_t btb[SIZE_1K];
+
+  RAS ras;
 
   bool pred_choice;
 
@@ -63,10 +76,6 @@ private:
 
   // keeps lower n_bits of target
   uint32_t keep_lower(uint32_t target, int n_bits);
-
-  // garbage stuff
-  uint predicted_address;
-
 };
 
 #endif // PREDICTOR_H_SEEN

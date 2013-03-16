@@ -3,6 +3,33 @@
 #define PC10 (keep_lower(br->instruction_addr,10))
 #define NEXT (br->instruction_next_addr)
 
+RAS::RAS(unsigned long maxsize = 64): stack_size(maxsize) { };
+
+uint32_t RAS::pop_ret_pred()
+{
+  uint32_t retval;
+
+  if (stack.size() > 0)
+  {
+    retval = stack.front();
+    stack.pop_front();
+    return retval;
+  }
+  else
+    return 0;
+}
+
+bool RAS::push_call(uint32_t address)
+{
+  
+  if (stack.size() == stack_size)
+    stack.pop_back();
+
+  stack.push_front(address);
+
+  return true;
+}
+
 PREDICTOR::PREDICTOR()
 {
   for (int i = 0; i < SIZE_1K; i++)
@@ -20,9 +47,6 @@ PREDICTOR::PREDICTOR()
 
   for (int i = 0; i < SIZE_1K; i++)
     btb[i] = 0;
-
-  btb_mispredicts = 0;
-  btb_used = false;
 }
 
 bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
@@ -44,9 +68,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   local_prediction = get_local_predict(br, predicted_target_address);
   global_prediction = get_global_predict(br, predicted_target_address);
 
-  pred_choice = choose_predictor(br);
-
-  if (pred_choice == PRED_LOCAL) //choose which predictor to use, local or global
+  if (choose_predictor(br) == PRED_LOCAL) //choose which predictor to use, local or global
     final_prediction = local_prediction;
   else
     final_prediction = global_prediction;
@@ -56,16 +78,13 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
     if (btb[PC10] == 0)
       *predicted_target_address = NEXT;
     else
-    {
       *predicted_target_address = btb[PC10];
-      btb_mispredicts++;
-      btb_used = true;
-    }
   }
   else
     *predicted_target_address = NEXT;
 
-  predicted_address = *predicted_target_address;
+  if (br->is_return)
+    *predicted_target_address = ras.pop_ret_pred();
 
   return final_prediction;   // true for taken, false for not taken
 }
@@ -127,13 +146,13 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   phistory = keep_lower((phistory << 1) | taken, 12);
 
   // update BTB entry
-  if (taken)
-    btb[PC10] = actual_target_address;
-
-  if (predicted_address == actual_target_address && btb_used)
-    btb_mispredicts--;
-
-  btb_used = false;
+  if (br->is_call) //if a call is happening, save the next address to the RAS
+    ras.push_call(br->instruction_next_addr);
+  else // handle other kinds of addresses
+  {
+    if (taken)
+      btb[PC10] = actual_target_address;
+  }
 
   return;
 }
