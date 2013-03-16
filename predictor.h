@@ -24,8 +24,8 @@
 #define NOT_TAKEN false
 
 
-#define ENTRIES 32   // number of entries in cache
-#define INDEX 5       //(logbase2(ENTRIES))    // log2()
+#define ENTRIES 256   // number of entries in cache
+#define INDEX 8       //(logbase2(ENTRIES))    // log2()
 #define WAYS 2        // number of ways
 
 int logbase2(int input);

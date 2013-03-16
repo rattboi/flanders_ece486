@@ -18,7 +18,6 @@ int logbase2(int input)
     while (input >>= 1) ++result;
     return result;
   }
-
 PREDICTOR::PREDICTOR()
   {
   for (int i = 0; i < SIZE_1K; i++)
@@ -50,13 +49,11 @@ bool PREDICTOR::choose_predictor(const branch_record_c* br)
   // return of PRED_LOCAL means use local history
   // return of PRED_GLOBAL means use global history
   {
-    uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
-
-    curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
-    curr_alpha_choice_entry = ( curr_alpha_choice_entry & 2 );      // only care about bit 1 of saturating counter
-
-    if (curr_alpha_choice_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
-    else return PRED_GLOBAL; // bit 1 was set
+  uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
+  curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
+  curr_alpha_choice_entry = ( curr_alpha_choice_entry & 2 );      // only care about bit 1 of saturating counter
+  if (curr_alpha_choice_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
+  else return PRED_GLOBAL; // bit 1 was set
   }
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
   {
@@ -77,36 +74,36 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   {
   // ALPHA UPDATE
 
-  uint16_t curr = alpha_lht[PC10];
-  // update prediction tables
-  if (taken)
-  {
-    if (alpha_lpt[curr] < 7)      alpha_lpt[curr]++;
-    if (alpha_gpt[phistory] < 3)  alpha_gpt[phistory]++;
-  }
-  else
-  {
-    if (alpha_lpt[curr] > 0)      alpha_lpt[curr]--;
-    if (alpha_gpt[phistory] > 0)  alpha_gpt[phistory]--;
-  }
-  // update prediction choice table
-  if (taken != final_prediction && global_prediction != local_prediction) // misprediction occured, but one predictor was correct
-  {
-    if (taken == global_prediction)
+    uint16_t curr = alpha_lht[PC10];
+    // update prediction tables
+    if (taken)
     {
-      if (alpha_choice[phistory] < 3)   alpha_choice[phistory]++;
+      if (alpha_lpt[curr] < 7)      alpha_lpt[curr]++;
+      if (alpha_gpt[phistory] < 3)  alpha_gpt[phistory]++;
     }
     else
     {
-      if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
+      if (alpha_lpt[curr] > 0)      alpha_lpt[curr]--;
+      if (alpha_gpt[phistory] > 0)  alpha_gpt[phistory]--;
     }
-  }
+    // update prediction choice table
+    if (taken != final_prediction && global_prediction != local_prediction) // misprediction occured, but one predictor was correct
+    {
+      if (taken == global_prediction)
+      {
+        if (alpha_choice[phistory] < 3)   alpha_choice[phistory]++;
+      }
+      else
+      {
+        if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
+      }
+    }
 
-  // update path history
-  phistory = keep_lower((phistory << 1) | taken, 12);
+    // update path history
+    phistory = keep_lower((phistory << 1) | taken, 12);
 
-  // update local history table:  shift left, OR with taken, keep 10 bits
-  alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, 10);
+    // update local history table:  shift left, OR with taken, keep 10 bits
+    alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, 10);
   // TARGET UPDATE
     if( thecache.needs_update )
       thecache.line_full = thecache.update(br, actual_target_address);
@@ -123,8 +120,8 @@ CACHE::CACHE()
 
     for (int i = 0; i < ENTRIES; i++)
     {
-      count[ENTRIES] = 0;
-      for (int j = 0; j < ENTRIES; j++)
+      count[i] = 0;
+      for (int j = 0; j < WAYS; j++)
       {
         data[i][j] = 0;
         tag[i][j] = 0;
@@ -139,7 +136,7 @@ bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
   {
     for (int i = 0; i < WAYS; i++)
     {
-      if( tag[PC_LOWER][i] == PC >> INDEX )
+      if( tag[PC_LOWER][i] == (PC >> INDEX) )
       {
         *predicted_target_address = data[PC_LOWER][i];
         return false; // does not need to update
@@ -162,22 +159,19 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
     for (int i = 0; i < WAYS; i++)
     {
       if (data[PC_LOWER][i] == 0)
-        tag[PC_LOWER][i] = PC >> INDEX;  // store tag in empty way
+      {
+        tag[PC_LOWER][i] = (PC >> INDEX);  // store tag in empty way
         data[PC_LOWER][i] = actual_target_address; // store branch address in empty way
         return false; // there was an empty place to put
+      }
     }
 
     //else, we need to evict
     uint victim = count[PC_LOWER];  // read out the current victim
-    tag[PC_LOWER][victim] = PC >> INDEX;  // use overwrite victim's tag field
+    tag[PC_LOWER][victim] = (PC >> INDEX);  // use overwrite victim's tag field
     data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
 
-    // this if/else structure allows non power-of-2 values to be used for ways
-    if (victim == WAYS)
-      count[PC_LOWER] = 0;
-    else
-      count[PC_LOWER] = victim++;
-
+    count[PC_LOWER] = victim++ %WAYS;
     return true;  // eviction was made
   }
 
