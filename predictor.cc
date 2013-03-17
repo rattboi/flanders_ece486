@@ -4,23 +4,6 @@
 #define NEXT (br->instruction_next_addr)
 #define PC_LOWER (keep_lower(PC,INDEX))
 
-using namespace std;
-
-// keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
-uint32_t keep_lower(uint32_t target, int n_bits)
-{
-  return target & ((1<<n_bits)-1);
-}
-
-int logbase2(int input)
-{
-  int result = 0;
-
-  if (input == 0) return 0;
-
-  while (input >>= 1) ++result;
-  return result;
-}
 
 ALPHA::ALPHA()
 {
@@ -123,7 +106,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   pred =  alpha.get_prediction(br);   // true for taken, false for not taken
 
   //  TARGET PREDICTION
-  thecache.needs_update = thecache.predict(br, predicted_target_address);  // updates *predicted_target_address
+  thecache.predict(br, predicted_target_address);  // updates *predicted_target_address
 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
@@ -146,8 +129,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     ras.push_call(NEXT);
 
   // TARGET UPDATE
-  if( thecache.needs_update )
-    thecache.line_full = thecache.update(br, actual_target_address);
+  if( thecache.needs_update() )
+    thecache.update(br, actual_target_address);
 
   return;
 }
@@ -192,11 +175,10 @@ bool RAS::push_call(uint address)
 //
 CACHE::CACHE()
 {
-    needs_update = false;
+    b_needs_update = false;
 
     for (int i = 0; i < ENTRIES; i++)
     {
-      count[i] = 0;
       for (int j = 0; j < WAYS; j++)
       {
         data[i][j] = 0;
@@ -215,19 +197,21 @@ bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
     {
       *predicted_target_address = data[PC_LOWER][i];
       thelru.update_all(i, PC_LOWER); // update LRU counters
+      b_needs_update = false;
       return false; // does not need to update
     }
   }
 
   // cycled through all ways and no tags matched.  Not in cache
   *predicted_target_address = 0;
+  b_needs_update = true;
   return true; // cache needs to update because this was a miss
 }
 
 // no need to call unless misprediction or empty
 bool CACHE::update(const branch_record_c* br, uint actual_target_address)
 {
-  needs_update = false; // dismiss the flag
+  b_needs_update = false; // dismiss the flag
 
   // if there is an empty way, put the data there
   for (int i = 0; i < WAYS; i++)
@@ -247,6 +231,11 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
   data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
   thelru.update_all(victim, PC_LOWER);
   return true;  // eviction was made
+}
+
+bool CACHE::needs_update()
+{
+  return b_needs_update;
 }
 
 //
@@ -291,3 +280,20 @@ uint LRU::get_victim( uint32_t index )
   }
   exit(-1); // should never reach this point-- included to silence compiler warnings
 }
+
+// keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
+uint32_t keep_lower(uint32_t target, int n_bits)
+{
+  return target & ((1<<n_bits)-1);
+}
+
+int logbase2(int input)
+{
+  int result = 0;
+
+  if (input == 0) return 0;
+
+  while (input >>= 1) ++result;
+  return result;
+}
+

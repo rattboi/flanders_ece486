@@ -30,6 +30,8 @@
 #define INDEX 6       //(logbase2(ENTRIES))    // log2()
 #define WAYS 8        // number of ways
 
+using namespace std;
+
 class LRU
 {
 public:
@@ -44,17 +46,16 @@ class CACHE
 {
 public:
   CACHE();
-
-  uint data[ENTRIES][WAYS];
-  uint tag[ENTRIES][WAYS];
-  uint count[ENTRIES];
-  bool needs_update;
-  bool line_full;
-
   bool predict(const branch_record_c* br, uint *predicted_target_address);
   bool update(const branch_record_c* br, uint actual_target_address);
-  LRU thelru;
+  bool needs_update();
 
+private:
+  uint data[ENTRIES][WAYS];
+  uint tag[ENTRIES][WAYS];
+  bool b_needs_update;
+
+  LRU thelru;
 };
 
 class RAS
@@ -65,7 +66,7 @@ class RAS
     bool push_call(uint32_t address);
 
   private:
-    std::deque<uint> stack;
+    deque<uint> stack;
     unsigned long stack_size;
 };
 
@@ -112,6 +113,9 @@ private:
   CACHE thecache;
   RAS ras;
 };
+
+uint32_t keep_lower(uint32_t target, int n_bits);
+int logbase2(int input);
 
 #endif // PREDICTOR_H_SEEN
 
