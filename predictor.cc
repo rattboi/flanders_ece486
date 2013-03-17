@@ -175,4 +175,50 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
     return true;  // eviction was made
   }
 
+void update_all( uint way_accessed )
+{
+  uint way_value = counter[PC_LOWER][way_accessed];
+
+  for (int i = 0; i < WAYS; i++)  // for the counter for each way
+  {
+    if (counter[PC_LOWER][i] < way_value) // if it is lower than the count of the way used
+    {
+      if (counter[PC_LOWER][i] < WAYS)  // and is less than the max (these are saturating counters)
+      {
+          counter[PC_LOWER][i]++;         // then increase it
+      }
+    }
+  }
+  counter[PC_LOWER][way_accessed] = 0;  // and set the way accessed to 0 (most recently used)
+  return;
+}
+
+uint get_victim(  )
+{
+  for (uint i = 0; i < WAYS; i++)
+  {
+    if (counter[PC_LOWER][i] == WAYS)
+    {
+      return i;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

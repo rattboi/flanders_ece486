@@ -24,11 +24,20 @@
 #define NOT_TAKEN false
 
 
-#define ENTRIES 256   // number of entries in cache
-#define INDEX 8       //(logbase2(ENTRIES))    // log2()
-#define WAYS 2        // number of ways
+#define ENTRIES 512   // number of entries in cache
+#define INDEX 9       //(logbase2(ENTRIES))    // log2()
+#define WAYS 1        // number of ways
 
 int logbase2(int input);
+
+class LRU
+{
+public:
+  uint counter[ENTRIES][WAYS];
+
+  void update_all( uint way_accessed );
+  uint get_victim();
+};
 
 class CACHE
 {
