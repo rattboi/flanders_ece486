@@ -2,8 +2,25 @@
 #define PC (br->instruction_addr)
 #define PC10 (keep_lower(br->instruction_addr,10))
 #define NEXT (br->instruction_next_addr)
+#define PC_LOWER (keep_lower(PC,INDEX))
 
 using namespace std;
+
+// keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
+uint32_t keep_lower(uint32_t target, int n_bits)
+{
+  return target & ((1<<n_bits)-1);
+}
+
+int logbase2(int input)
+{
+  int result = 0;
+
+  if (input == 0) return 0;
+
+  while (input >>= 1) ++result;
+  return result;
+}
 
 RAS::RAS(unsigned long maxsize = 32): stack_size(maxsize) { };
 
@@ -39,52 +56,55 @@ PREDICTOR::PREDICTOR()
   // set all our data structures to initial values
   for (int i = 0; i < SIZE_1K; i++)
   {
-    lht[i] = 0;
-    lpt[i] = 0;
+    alpha_lht[i] = 0;
+    alpha_lpt[i] = 0;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
   {
-    gpt[i] = 0;
-    cpt[i] = 2; //default to weakly global
+    alpha_gpt[i] = 0;
+    alpha_choice[i] = 2; //default to weakly global
   }
 
   phistory = 0;
-
-  for (int i = 0; i < SIZE_1K; i++)
-    btb[i] = 0;
 }
 
-bool PREDICTOR::get_local_predict(const branch_record_c* br, uint *predicted_target_address)
+bool PREDICTOR::get_local_predict(const branch_record_c* br)
 {
-  uint16_t lht_ind = PC10;
-  uint16_t lp_ind = lht[lht_ind];
-  uint16_t pred_bits = lpt[lp_ind];
+  uint16_t alpha_lht_ind = PC10;
+  uint16_t curr = alpha_lht[alpha_lht_ind];
+  uint16_t pred_bits = alpha_lpt[curr];
 
   return (pred_bits & 4)>>2;
 }
 
-bool PREDICTOR::get_global_predict(const branch_record_c* br, uint *predicted_target_address)
+bool PREDICTOR::get_global_predict(const branch_record_c* br)
 {
-  return (gpt[phistory]&2)>>1;
+  return (alpha_gpt[phistory]&2)>>1;
+}
+
+// return of PRED_LOCAL means use local history
+// return of PRED_GLOBAL means use global history
+bool PREDICTOR::choose_predictor(const branch_record_c* br)
+{
+  uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
+  curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
+  curr_alpha_choice_entry = ( curr_alpha_choice_entry & 2 );      // only care about bit 1 of saturating counter
+  if (curr_alpha_choice_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
+  else return PRED_GLOBAL; // bit 1 was set
 }
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  local_prediction = get_local_predict(br, predicted_target_address);
-  global_prediction = get_global_predict(br, predicted_target_address);
+  //  ALPHA PREDICTION
+  local_prediction = get_local_predict(br);
+  global_prediction = get_global_predict(br);
+  pred_choice = choose_predictor(br);
 
-  final_prediction = (choose_predictor(br) == PRED_LOCAL) ? local_prediction : global_prediction;
+  final_prediction = (pred_choice == PRED_LOCAL) ? local_prediction : global_prediction;
 
-  if (final_prediction == TAKEN)
-  {
-    if (btb[PC10] == 0)
-      *predicted_target_address = NEXT;
-    else
-      *predicted_target_address = btb[PC10];
-  }
-  else
-    *predicted_target_address = NEXT;
+  //  TARGET PREDICTION
+  thecache.needs_update = thecache.predict(br, predicted_target_address);  // updates *predicted_target_address
 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
@@ -100,81 +120,152 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 // argument (taken) indicating whether or not the branch was taken.
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
-  // update local first
-  uint16_t lht_ind = PC10;
-  uint16_t lp_ind = lht[lht_ind];
+  // ALPHA UPDATE
+  uint16_t curr = alpha_lht[PC10];
 
-  // update local prediction table
+  // update prediction tables
   if (taken)
   {
-    if (lpt[lp_ind] < 7)
-      lpt[lp_ind]++;
+    if (alpha_lpt[curr] < 7)      alpha_lpt[curr]++;
+    if (alpha_gpt[phistory] < 3)  alpha_gpt[phistory]++;
   }
   else
   {
-    if (lpt[lp_ind] > 0)
-      lpt[lp_ind]--;
-  }
-
-  // update local history table
-  lht[lht_ind] = keep_lower((lht[lht_ind] << 1) | taken, 10);
-
-  // update global now
-  // update global prediction table
-  if (taken)
-  {
-    if (gpt[phistory] < 3)
-      gpt[phistory]++;
-  }
-  else
-  {
-    if (gpt[phistory] > 0)
-      gpt[phistory]--;
+    if (alpha_lpt[curr] > 0)      alpha_lpt[curr]--;
+    if (alpha_gpt[phistory] > 0)  alpha_gpt[phistory]--;
   }
 
   // update prediction choice table
-  if (taken != final_prediction && global_prediction != local_prediction)
+  if (taken != final_prediction && global_prediction != local_prediction) // misprediction occured, but one predictor was correct
   {
     if (taken == global_prediction)
     {
-      if (cpt[phistory] < 3)
-        cpt[phistory]++;
+      if (alpha_choice[phistory] < 3)   alpha_choice[phistory]++;
     }
     else
     {
-      if (cpt[phistory] > 0)
-        cpt[phistory]--;
+      if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
     }
   }
 
   // update path history
   phistory = keep_lower((phistory << 1) | taken, 12);
 
-  // update BTB entry
+  // update local history table:  shift left, OR with taken, keep 10 bits
+  alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, 10);
+
   if (br->is_call) //if a call is happening, save the next address to the RAS
     ras.push_call(NEXT);
 
-  if (taken)
-    btb[PC10] = actual_target_address;
+  // TARGET UPDATE
+  if( thecache.needs_update )
+    thecache.line_full = thecache.update(br, actual_target_address);
 
   return;
 }
 
-// return of PRED_LOCAL means use local history
-// return of PRED_GLOBAL means use global history
-bool PREDICTOR::choose_predictor(const branch_record_c* br)
+
+//
+// CACHE
+//
+CACHE::CACHE()
 {
-  uint16_t curr_cpt_entry;                      // holds current choice predict table entry
+    needs_update = false;
 
-  curr_cpt_entry = cpt[phistory];               // current cpt entry, indexed by path history
-  curr_cpt_entry = ( curr_cpt_entry & 2 );      // only care about bit 1 of saturating counter
-
-  if (curr_cpt_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
-  else                      return PRED_GLOBAL; // bit 1 was set
+    for (int i = 0; i < ENTRIES; i++)
+    {
+      count[i] = 0;
+      for (int j = 0; j < WAYS; j++)
+      {
+        data[i][j] = 0;
+        tag[i][j] = 0;
+      }
+    }
 }
 
-// keeps lower n_bits of target ( glorified AND operation, because C++ != verilog )
-uint32_t PREDICTOR::keep_lower(uint32_t target, int n_bits)
+// returns false (indicating no update needed) on hits (and updates *predicted_target_address )
+// returns true (indicating update required) on misses (and sets *predicted_target_address to 0)
+bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
 {
-    return target & ((1<<n_bits)-1);
+  for (int i = 0; i < WAYS; i++)
+  {
+    if( tag[PC_LOWER][i] == (PC >> INDEX) )
+    {
+      *predicted_target_address = data[PC_LOWER][i];
+      thelru.update_all(i, PC_LOWER); // update LRU counters
+      return false; // does not need to update
+    }
+  }
+
+  // cycled through all ways and no tags matched.  Not in cache
+  *predicted_target_address = 0;
+  return true; // cache needs to update because this was a miss
+}
+
+// no need to call unless misprediction or empty
+bool CACHE::update(const branch_record_c* br, uint actual_target_address)
+{
+  needs_update = false; // dismiss the flag
+
+  // if there is an empty way, put the data there
+  for (int i = 0; i < WAYS; i++)
+  {
+    if (data[PC_LOWER][i] == 0)
+    {
+      tag[PC_LOWER][i] = (PC >> INDEX);  // store tag in empty way
+      data[PC_LOWER][i] = actual_target_address; // store branch address in empty way
+      thelru.update_all(i, PC_LOWER);
+      return false; // there was an empty place to put
+    }
+  }
+
+  //else, we need to evict
+  uint victim = thelru.get_victim( PC_LOWER );
+  tag[PC_LOWER][victim] = (PC >> INDEX);  // use overwrite victim's tag field
+  data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
+  thelru.update_all(victim, PC_LOWER);
+  return true;  // eviction was made
+}
+
+//
+// LRU
+//
+// counters must be initialized to a valid ordering (no repeating values)
+LRU::LRU()
+{
+  for (uint i = 0; i < ENTRIES; i++)
+  {
+    for (uint j = 0; j < WAYS; j++)
+    {
+      counter[i][j]=j;
+    }
+  }
+}
+
+// given way_accessed, updates the counters at cache line given in index
+void LRU::update_all( uint way_accessed, uint32_t index)
+{
+  uint way_value = counter[index][way_accessed];
+
+  for (uint i = 0; i < WAYS; i++)  // increase all counters
+  {
+    if ( counter[index][i] < way_value && counter[index][i] < WAYS-1) // if it is lower than the count of the way used
+          counter[index][i]++;         // and less than the max count (saturating counters) then increase it
+  }
+
+  counter[index][way_accessed] = 0;  // and set the way accessed to 0 (most recently used)
+  return;
+}
+
+// given a cache line (index), returns the LRU (ie the highest count)
+uint LRU::get_victim( uint32_t index )
+{
+  for (uint i = 0; i < WAYS; i++)
+  {
+    if (counter[index][i] == WAYS - 1)
+    {
+      return i;
+    }
+  }
+  exit(-1); // should never reach this point-- included to silence compiler warnings
 }
