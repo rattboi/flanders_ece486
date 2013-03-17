@@ -22,36 +22,7 @@ int logbase2(int input)
   return result;
 }
 
-RAS::RAS(unsigned long maxsize = 32): stack_size(maxsize) { };
-
-uint RAS::pop_ret_pred()
-{
-  uint retval;
-
-  if (!stack.empty())
-  {
-    retval = stack.front();
-    stack.pop_front();
-    return retval;
-  }
-  else
-    return 0;
-}
-
-bool RAS::push_call(uint address)
-{
-  stack.push_front(address);
-
-  if (stack.size() == stack_size)
-  {
-    stack.pop_back();
-    return false;
-  }
-
-  return true;
-}
-
-PREDICTOR::PREDICTOR()
+ALPHA::ALPHA()
 {
   // set all our data structures to initial values
   for (int i = 0; i < SIZE_1K; i++)
@@ -69,7 +40,7 @@ PREDICTOR::PREDICTOR()
   phistory = 0;
 }
 
-bool PREDICTOR::get_local_predict(const branch_record_c* br)
+bool ALPHA::get_local_predict(const branch_record_c* br)
 {
   uint16_t alpha_lht_ind = PC10;
   uint16_t curr = alpha_lht[alpha_lht_ind];
@@ -78,14 +49,14 @@ bool PREDICTOR::get_local_predict(const branch_record_c* br)
   return (pred_bits & 4)>>2;
 }
 
-bool PREDICTOR::get_global_predict(const branch_record_c* br)
+bool ALPHA::get_global_predict(const branch_record_c* br)
 {
   return (alpha_gpt[phistory]&2)>>1;
 }
 
 // return of PRED_LOCAL means use local history
 // return of PRED_GLOBAL means use global history
-bool PREDICTOR::choose_predictor(const branch_record_c* br)
+bool ALPHA::choose_predictor(const branch_record_c* br)
 {
   uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
   curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
@@ -94,33 +65,18 @@ bool PREDICTOR::choose_predictor(const branch_record_c* br)
   else return PRED_GLOBAL; // bit 1 was set
 }
 
-bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
+bool ALPHA::get_prediction(const branch_record_c* br)
 {
-  //  ALPHA PREDICTION
   local_prediction = get_local_predict(br);
   global_prediction = get_global_predict(br);
-  pred_choice = choose_predictor(br);
 
-  final_prediction = (pred_choice == PRED_LOCAL) ? local_prediction : global_prediction;
+  final_prediction = (choose_predictor(br) == PRED_LOCAL) ? local_prediction : global_prediction;
 
-  //  TARGET PREDICTION
-  thecache.needs_update = thecache.predict(br, predicted_target_address);  // updates *predicted_target_address
-
-  if (br->is_return)
-    *predicted_target_address = ras.pop_ret_pred();
-
-  if (!(br->is_conditional))
-    return TAKEN;
-  else 
-    return final_prediction;   // true for taken, false for not taken
+  return final_prediction;
 }
 
-// Update the predictor after a prediction has been made.  This should accept
-// the branch record (br) and architectural state (os), as well as a third
-// argument (taken) indicating whether or not the branch was taken.
-void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
+void ALPHA::update(const branch_record_c* br, bool taken)
 {
-  // ALPHA UPDATE
   uint16_t curr = alpha_lht[PC10];
 
   // update prediction tables
@@ -153,6 +109,38 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   // update local history table:  shift left, OR with taken, keep 10 bits
   alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, 10);
+}
+
+PREDICTOR::PREDICTOR()
+{
+
+}
+
+bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
+{
+  // ALPHA PREDICTION
+  bool pred;
+  pred =  alpha.get_prediction(br);   // true for taken, false for not taken
+
+  //  TARGET PREDICTION
+  thecache.needs_update = thecache.predict(br, predicted_target_address);  // updates *predicted_target_address
+
+  if (br->is_return)
+    *predicted_target_address = ras.pop_ret_pred();
+
+  if (!(br->is_conditional))
+    return TAKEN;
+  else 
+    return pred;   // true for taken, false for not taken
+}
+
+// Update the predictor after a prediction has been made.  This should accept
+// the branch record (br) and architectural state (os), as well as a third
+// argument (taken) indicating whether or not the branch was taken.
+void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
+{
+  // ALPHA UPDATE
+  alpha.update(br, taken);
 
   if (br->is_call) //if a call is happening, save the next address to the RAS
     ras.push_call(NEXT);
@@ -164,6 +152,40 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   return;
 }
 
+//
+//RETURN ADDRESS STACK
+//
+RAS::RAS()
+{ 
+  stack_size = 64;
+};
+
+uint RAS::pop_ret_pred()
+{
+  uint retval;
+
+  if (!stack.empty())
+  {
+    retval = stack.front();
+    stack.pop_front();
+    return retval;
+  }
+  else
+    return 0;
+}
+
+bool RAS::push_call(uint address)
+{
+  stack.push_front(address);
+
+  if (stack.size() == stack_size)
+  {
+    stack.pop_back();
+    return false;
+  }
+
+  return true;
+}
 
 //
 // CACHE
