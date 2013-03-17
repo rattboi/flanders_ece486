@@ -24,19 +24,20 @@
 #define NOT_TAKEN false
 
 
-#define ENTRIES 512   // number of entries in cache
-#define INDEX 9       //(logbase2(ENTRIES))    // log2()
-#define WAYS 1        // number of ways
+#define ENTRIES 64   // number of entries in cache
+#define INDEX 6       //(logbase2(ENTRIES))    // log2()
+#define WAYS 7        // number of ways
 
 int logbase2(int input);
 
 class LRU
 {
 public:
+  LRU();
   uint counter[ENTRIES][WAYS];
 
-  void update_all( uint way_accessed );
-  uint get_victim();
+  void update_all( uint way_accessed, uint32_t index );
+  uint get_victim( uint32_t index );
 };
 
 class CACHE
@@ -52,6 +53,8 @@ public:
 
   bool predict(const branch_record_c* br, uint *predicted_target_address);
   bool update(const branch_record_c* br, uint actual_target_address);
+    LRU thelru;
+
 };
 
 class PREDICTOR

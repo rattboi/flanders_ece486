@@ -139,6 +139,7 @@ bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
       if( tag[PC_LOWER][i] == (PC >> INDEX) )
       {
         *predicted_target_address = data[PC_LOWER][i];
+        thelru.update_all(i, PC_LOWER); // update LRU counters
         return false; // does not need to update
       }
     }
@@ -162,45 +163,64 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
       {
         tag[PC_LOWER][i] = (PC >> INDEX);  // store tag in empty way
         data[PC_LOWER][i] = actual_target_address; // store branch address in empty way
+        thelru.update_all(i, PC_LOWER);
         return false; // there was an empty place to put
       }
     }
 
     //else, we need to evict
-    uint victim = count[PC_LOWER];  // read out the current victim
+    uint victim = thelru.get_victim( PC_LOWER );
+
+//    uint victim = count[PC_LOWER];  // read out the current victim
     tag[PC_LOWER][victim] = (PC >> INDEX);  // use overwrite victim's tag field
     data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
-
-    count[PC_LOWER] = victim++ %WAYS;
+//    count[PC_LOWER] = victim++ %WAYS;
+    thelru.update_all(victim, PC_LOWER);
     return true;  // eviction was made
   }
 
-void update_all( uint way_accessed )
+LRU::LRU()
 {
-  uint way_value = counter[PC_LOWER][way_accessed];
-
-  for (int i = 0; i < WAYS; i++)  // for the counter for each way
+  for (uint i = 0; i < ENTRIES; i++)
   {
-    if (counter[PC_LOWER][i] < way_value) // if it is lower than the count of the way used
+    for (uint j = 0; j < WAYS; j++)
     {
-      if (counter[PC_LOWER][i] < WAYS)  // and is less than the max (these are saturating counters)
+      // printf("counter[%i][%i]=%i\n", i, j, j ); // confirmed that initialization works
+      counter[ENTRIES][j]=j;
+    }
+  }
+}
+
+void LRU::update_all( uint way_accessed, uint32_t index)
+{
+  uint way_value = counter[index][way_accessed];
+
+  for (uint i = 0; i < WAYS; i++)  // for the counter for each way
+  {
+    if (counter[index][i] < way_value) // if it is lower than the count of the way used
+    {
+      if (counter[index][i] < WAYS-1)  // and is less than the max (these are saturating counters)
       {
-          counter[PC_LOWER][i]++;         // then increase it
+          counter[index][i]++;         // then increase it
       }
     }
   }
-  counter[PC_LOWER][way_accessed] = 0;  // and set the way accessed to 0 (most recently used)
+  counter[index][way_accessed] = 0;  // and set the way accessed to 0 (most recently used)
   return;
 }
 
-uint get_victim(  )
+uint LRU::get_victim( uint32_t index )
 {
   for (uint i = 0; i < WAYS; i++)
   {
-    if (counter[PC_LOWER][i] == WAYS)
+    printf("index = %d i = %d counter = %d\n", index, i, counter[index][i]);
+    if (counter[index][i] == WAYS - 1)
     {
       return i;
     }
+  }
+  printf("you shouldn't be here\n");
+  exit(-9000);
 }
 
 
