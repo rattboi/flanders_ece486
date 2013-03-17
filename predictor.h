@@ -26,7 +26,7 @@
 
 #define ENTRIES 64   // number of entries in cache
 #define INDEX 6       //(logbase2(ENTRIES))    // log2()
-#define WAYS 7        // number of ways
+#define WAYS 4        // number of ways
 
 int logbase2(int input);
 
@@ -53,7 +53,7 @@ public:
 
   bool predict(const branch_record_c* br, uint *predicted_target_address);
   bool update(const branch_record_c* br, uint actual_target_address);
-    LRU thelru;
+  LRU thelru;
 
 };
 
@@ -64,6 +64,7 @@ public:
   bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
 
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
+
 private:
 
   // ALPHA STUFF
@@ -86,10 +87,5 @@ private:
   // TARGET STUFF
   CACHE thecache;
 };
-
-// keeps lower n_bits of target
-uint32_t keep_lower(uint32_t target, int n_bits);
-
-
 
 #endif // PREDICTOR_H_SEEN
