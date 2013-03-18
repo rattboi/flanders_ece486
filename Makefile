@@ -2,7 +2,7 @@
 # Description: Makefile for building a cbp submission.
 
 CFLAGS = -g -Wall
-CXXFLAGS = -g -Wall
+CXXFLAGS = -g -Wall -O3
 
 objects = cbp_inst.o main.o op_state.o predictor.o tread.o
 

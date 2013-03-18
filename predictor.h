@@ -37,53 +37,33 @@ using namespace std;
 class LRU
 {
 public:
-  LRU();
-  uint counter[M_ENTRIES][M_WAYS];
+  LRU(uint entries, uint ways);
 
   void update_all( uint way_accessed, uint32_t index );
   uint get_victim( uint32_t index );
-};
-
-class VLRU
-{
-public:
-  LRU();
-  uint counter[V_WAYS];
-
-  void update_all( uint way_accessed);
-  uint get_victim( );
+private:
+  uint **counter; //dynamic array of size entries * ways
+  uint entries;
+  uint ways;
 };
 
 class CACHE
 {
 public:
-  CACHE();
+  CACHE(uint entries, uint ways);
   bool predict(const branch_record_c* br, uint *predicted_target_address);
   bool update(const branch_record_c* br, uint actual_target_address);
   bool needs_update();
 
 private:
-  uint data[M_ENTRIES][M_WAYS];
-  uint tag[M_ENTRIES][M_WAYS];
+  uint **data;
+  uint **tag;
   bool b_needs_update;
 
-  LRU mainlru;
-};
+  int entries;
+  int ways;
 
-class FACACHE
-{
-public:
-  FACACHE();
-  bool predict(const branch_record_c* br, uint *predicted_target_address);
-  bool update(const branch_record_c* br, uint actual_target_address);
-  bool needs_update();
-
-private:
-  uint data[M_WAYS];
-  uint tag[M_WAYS];
-  bool b_needs_update;
-
-  VLRU victimlru;
+  LRU *lru;
 };
 
 class RAS
@@ -138,8 +118,7 @@ private:
   ALPHA alpha;
 
   // TARGET STUFF
-  CACHE maincache;
-  CACHE victimcache;
+  CACHE *maincache;
   RAS ras;
 };
 
