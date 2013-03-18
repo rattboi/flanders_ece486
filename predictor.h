@@ -38,21 +38,23 @@ class LRU
 {
 public:
   LRU(uint entries, uint ways);
+  ~LRU();
 
   void update_all( uint way_accessed, uint32_t index );
   uint get_victim( uint32_t index );
 private:
   uint **counter; //dynamic array of size entries * ways
-  uint entries;
-  uint ways;
+  int entries;
+  int ways;
 };
 
 class CACHE
 {
 public:
   CACHE(uint entries, uint ways);
-  bool predict(const branch_record_c* br, uint *predicted_target_address);
-  bool update(const branch_record_c* br, uint actual_target_address);
+  ~CACHE();
+  bool predict(const uint32_t addr_idx, uint *predicted_target_address);
+  bool update(const uint32_t addr_idx, uint actual_target_address);
   bool needs_update();
 
 private:
@@ -62,6 +64,7 @@ private:
 
   int entries;
   int ways;
+  int idx_bits;
 
   LRU *lru;
 };
@@ -86,10 +89,10 @@ class ALPHA
     void update(const branch_record_c* br, bool taken);
 
   private:
-    bool get_local_predict(const branch_record_c* br);
-    bool get_global_predict(const branch_record_c* br);
+    bool get_local_predict(const uint32_t address);
+    bool get_global_predict();
     // returns PRED_LOCAL or PRED GLOBAL indicating whether local or global history should be used
-    bool choose_predictor(const branch_record_c* br);
+    bool choose_predictor();
 
     uint16_t alpha_lht[SIZE_1K];     //  local history table     (1024*10)/8    = 1280 bytes
     uint16_t alpha_lpt[SIZE_1K];     //  local prediction table  (1024*03)/8    = 384 bytes
@@ -109,6 +112,7 @@ class PREDICTOR
 {
 public:
   PREDICTOR();
+  ~PREDICTOR();
   bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
 

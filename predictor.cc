@@ -2,7 +2,7 @@
 #define PC (br->instruction_addr)
 #define PC10 (keep_lower(br->instruction_addr,10))
 #define NEXT (br->instruction_next_addr)
-#define PC_LOWER (keep_lower(PC,M_INDEX))
+#define PC_LOWER (keep_lower(addr_idx,idx_bits))
 
 int logbase2(int input);
 
@@ -24,23 +24,23 @@ ALPHA::ALPHA()
   phistory = 0;
 }
 
-bool ALPHA::get_local_predict(const branch_record_c* br)
+bool ALPHA::get_local_predict(const uint32_t address)
 {
-  uint16_t alpha_lht_ind = PC10;
+  uint16_t alpha_lht_ind = (uint16_t) address;
   uint16_t curr = alpha_lht[alpha_lht_ind];
   uint16_t pred_bits = alpha_lpt[curr];
 
   return (pred_bits & 4)>>2;
 }
 
-bool ALPHA::get_global_predict(const branch_record_c* br)
+bool ALPHA::get_global_predict()
 {
   return (alpha_gpt[phistory]&2)>>1;
 }
 
 // return of PRED_LOCAL means use local history
 // return of PRED_GLOBAL means use global history
-bool ALPHA::choose_predictor(const branch_record_c* br)
+bool ALPHA::choose_predictor()
 {
   uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
   curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
@@ -51,10 +51,10 @@ bool ALPHA::choose_predictor(const branch_record_c* br)
 
 bool ALPHA::get_prediction(const branch_record_c* br)
 {
-  local_prediction = get_local_predict(br);
-  global_prediction = get_global_predict(br);
+  local_prediction = get_local_predict(PC10);
+  global_prediction = get_global_predict();
 
-  final_prediction = (choose_predictor(br) == PRED_LOCAL) ? local_prediction : global_prediction;
+  final_prediction = (choose_predictor() == PRED_LOCAL) ? local_prediction : global_prediction;
 
   return final_prediction;
 }
@@ -103,8 +103,11 @@ void ALPHA::update(const branch_record_c* br, bool taken)
 PREDICTOR::PREDICTOR()
 {
   maincache = new CACHE(M_ENTRIES, M_WAYS);
-  
+}
 
+PREDICTOR::~PREDICTOR()
+{
+  delete maincache;
 }
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
@@ -114,7 +117,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   pred =  alpha.get_prediction(br);   // true for taken, false for not taken
 
   //  TARGET PREDICTION
-  maincache->predict(br, predicted_target_address);  // updates *predicted_target_address
+  maincache->predict(PC, predicted_target_address);  // updates *predicted_target_address
 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
@@ -139,7 +142,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   // TARGET UPDATE
   if( maincache->needs_update() )
-    maincache->update(br, actual_target_address);
+    maincache->update(PC, actual_target_address);
 
   return;
 }
@@ -186,6 +189,7 @@ CACHE::CACHE(uint m_entries, uint m_ways)
 {
     entries = m_entries; 
     ways = m_ways;
+    idx_bits = logbase2(entries);
 
     b_needs_update = false;
 
@@ -210,13 +214,32 @@ CACHE::CACHE(uint m_entries, uint m_ways)
     }
 }
 
+CACHE::~CACHE()
+{
+  if (lru)
+    delete lru;
+
+  for (int i = 0; i < entries; i++)
+  {
+    if (data[i])
+      delete [] data[i];
+    if (tag[i])
+      delete [] tag[i];
+  }
+
+  if (data)
+    delete [] data;
+
+  if (tag)
+    delete [] tag;
+}
 // returns false (indicating no update needed) on hits (and updates *predicted_target_address )
 // returns true (indicating update required) on misses (and sets *predicted_target_address to 0)
-bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
+bool CACHE::predict(const uint32_t addr_idx, uint *predicted_target_address)
 {
   for (int i = 0; i < ways; i++)
   {
-    if( tag[PC_LOWER][i] == (PC >> logbase2(entries)))
+    if( tag[PC_LOWER][i] == (addr_idx >> idx_bits))
     {
       *predicted_target_address = data[PC_LOWER][i];
       lru->update_all(i, PC_LOWER); // update LRU counters
@@ -234,7 +257,7 @@ bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
 }
 
 // no need to call unless misprediction or empty
-bool CACHE::update(const branch_record_c* br, uint actual_target_address)
+bool CACHE::update(const uint32_t addr_idx, uint actual_target_address)
 {
   b_needs_update = false; // dismiss the flag
 
@@ -243,7 +266,7 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
   {
     if (data[PC_LOWER][i] == 0)
     {
-      tag[PC_LOWER][i] = (PC >> logbase2(entries));  // store tag in empty way
+      tag[PC_LOWER][i] = (addr_idx >> idx_bits);  // store tag in empty way
       data[PC_LOWER][i] = actual_target_address; // store branch address in empty way
       lru->update_all(i, PC_LOWER);
       return false; // there was an empty place to put
@@ -251,8 +274,8 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
   }
 
   //else, we need to evict
-  uint victim = lru->get_victim( PC_LOWER );\
-  tag[PC_LOWER][victim] = (PC >> logbase2(entries));  // use overwrite victim's tag field
+  uint victim = lru->get_victim( PC_LOWER );
+  tag[PC_LOWER][victim] = (addr_idx >> idx_bits);  // use overwrite victim's tag field
   data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
   lru->update_all(victim, PC_LOWER);
   return true;  // eviction was made
@@ -274,16 +297,26 @@ LRU::LRU(uint m_entries, uint m_ways)
 
   counter = new uint*[sizeof(uint *) * entries];
   
-  for (uint i = 0; i < entries; i++)
+  for (int i = 0; i < entries; i++)
     counter[i] = new uint[sizeof(uint) * ways];
 
-  for (uint i = 0; i < entries; i++)
+  for (int i = 0; i < entries; i++)
   {
-    for (uint j = 0; j < ways; j++)
+    for (int j = 0; j < ways; j++)
     {
       counter[i][j]=j;
     }
   }
+}
+
+LRU::~LRU()
+{
+  for (int i = 0; i < entries; i++)
+  {
+    if (counter[i])
+      delete [] counter[i];
+  }
+  delete [] counter;
 }
 
 // given way_accessed, updates the counters at cache line given in index
@@ -291,9 +324,9 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 {
   uint way_value = counter[index][way_accessed];
 
-  for (uint i = 0; i < ways; i++)  // increase all counters
+  for (int i = 0; i < ways; i++)  // increase all counters
   {
-    if ( counter[index][i] < way_value && counter[index][i] < (ways-1)) // if it is lower than the count of the way used
+    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways-1)) // if it is lower than the count of the way used
           counter[index][i]++;         // and less than the max count (saturating counters) then increase it
   }
 
@@ -304,9 +337,9 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 // given a cache line (index), returns the LRU (ie the highest count)
 uint LRU::get_victim( uint32_t index )
 {
-  for (uint i = 0; i < ways; i++)
+  for (int i = 0; i < ways; i++)
   {
-    if (counter[index][i] == (ways - 1))
+    if (counter[index][i] == (uint)(ways - 1))
     {
       return i;
     }
