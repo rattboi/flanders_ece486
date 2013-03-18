@@ -1,3 +1,3 @@
 
-Old DIST-SERV-1: 1000*wrong_cc_bpredicts/total insts: 37.682
-Old DIST-SERV-1: 1000*wrong_tpredicts/total insts:   118.042
+Old DIST-SERV-1: Orig BP: 37.682  Current: 9.74734
+Old DIST-SERV-1: Orig TP: 118.042 Current: 34.38924

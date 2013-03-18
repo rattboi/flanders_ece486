@@ -1,3 +1,3 @@
 
-Old DIST-MM-1:   1000*wrong_cc_bpredicts/total insts: 24.189
-Old DIST-MM-1:   1000*wrong_tpredicts/total insts:    46.097
+Old DIST-MM-1:   Orig BP: 24.189  Current: 8.86973
+Old DIST-MM-1:   Orig TP: 46.097  Current: 8.88333

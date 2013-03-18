@@ -1,3 +1,3 @@
 
-Old DIST-FP-1:   1000*wrong_cc_bpredicts/total insts: 13.997
-Old DIST-FP-1:   1000*wrong_tpredicts/total insts:    29.464
+Old DIST-FP-1:   Orig BP: 13.997  Current: 3.35146
+Old DIST-FP-1:   Orig TP: 29.464  Current: 3.36102
