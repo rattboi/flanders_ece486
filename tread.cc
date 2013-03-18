@@ -70,11 +70,12 @@ cbp_trace_reader_c::~cbp_trace_reader_c(){
     //printf("*********************************************************\n");
     int   mis_bpreds     = (stat_num_cc_branches - stat_num_correct_bpredicts);
     int   mis_tpreds	 = (stat_num_branches - stat_num_correct_tpredicts);
-    //float mis_bpred_rate = float(mis_bpreds)/(float(stat_num_insts) / 1000);
+    float mis_bpred_rate = float(mis_bpreds)/(float(stat_num_insts) / 1000);
     float mis_tpred_rate = float(mis_tpreds)/(float(stat_num_insts) / 1000);
     //printf("1000*wrong_cc_bpredicts/total insts: 1000 * %8d / %8d = %7.3f\n", mis_bpreds, stat_num_insts, mis_bpred_rate);
     //printf("1000*wrong_tpredicts/total insts: 1000 * %8d / %8d = %7.3f\n", mis_tpreds, stat_num_insts, mis_tpred_rate);
-    printf("%7.5f\n",mis_tpred_rate);
+    printf("%7.5f\n",mis_bpred_rate);
+    printf("%7.5f\n\n",mis_tpred_rate);
     //printf("total branches:                  %8d\n", stat_num_branches);
     //printf("total cc branches:               %8d\n", stat_num_cc_branches);
     //printf("total predicts:                  %8d\n", stat_num_predicts);

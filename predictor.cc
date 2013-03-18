@@ -11,12 +11,12 @@ ALPHA::ALPHA()
   for (int i = 0; i < SIZE_1K; i++)
   {
     alpha_lht[i] = 0;
-    alpha_lpt[i] = 0;
+    alpha_lpt[i] = 3;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
   {
-    alpha_gpt[i] = 0;
+    alpha_gpt[i] = 1;
     alpha_choice[i] = 2; //default to weakly global
   }
 
@@ -75,7 +75,25 @@ void ALPHA::update(const branch_record_c* br, bool taken)
   }
 
   // update prediction choice table
-  if (taken != final_prediction && global_prediction != local_prediction) // misprediction occured, but one predictor was correct
+
+  switch(((global_prediction == taken)<<1)|(local_prediction == taken))
+  {
+    case 0:
+      break;
+    case 1:
+      if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
+      break;
+    case 2:
+      if (alpha_choice[phistory] < 3)   alpha_choice[phistory]++;
+      break;
+    case 3:
+      break;
+    default:
+      ;
+  }
+
+  /*
+  if (global_prediction != local_prediction) // misprediction occured, but one predictor was correct
   {
     if (taken == global_prediction)
     {
@@ -86,6 +104,7 @@ void ALPHA::update(const branch_record_c* br, bool taken)
       if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
     }
   }
+  */
 
   // update path history
   phistory = keep_lower((phistory << 1) | taken, 12);
@@ -123,7 +142,8 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
 {
   // ALPHA UPDATE
-  alpha.update(br, taken);
+  if (br->is_conditional)
+    alpha.update(br, taken);
 
   if (br->is_call) //if a call is happening, save the next address to the RAS
     ras.push_call(NEXT);
