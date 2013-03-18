@@ -26,9 +26,11 @@
 #define TAKEN true
 #define NOT_TAKEN false
 
-#define ENTRIES 64   // number of entries in cache
-#define INDEX 6       //(logbase2(ENTRIES))    // log2()
-#define WAYS 8        // number of ways
+#define M_ENTRIES 64   // number of entries in cache
+#define M_INDEX 6       //(logbase2(M_ENTRIES))    // log2()
+#define M_WAYS 8        // number of ways
+
+#define V_WAYS 30
 
 using namespace std;
 
@@ -36,10 +38,20 @@ class LRU
 {
 public:
   LRU();
-  uint counter[ENTRIES][WAYS];
+  uint counter[M_ENTRIES][M_WAYS];
 
   void update_all( uint way_accessed, uint32_t index );
   uint get_victim( uint32_t index );
+};
+
+class VLRU
+{
+public:
+  LRU();
+  uint counter[V_WAYS];
+
+  void update_all( uint way_accessed);
+  uint get_victim( );
 };
 
 class CACHE
@@ -51,11 +63,27 @@ public:
   bool needs_update();
 
 private:
-  uint data[ENTRIES][WAYS];
-  uint tag[ENTRIES][WAYS];
+  uint data[M_ENTRIES][M_WAYS];
+  uint tag[M_ENTRIES][M_WAYS];
   bool b_needs_update;
 
-  LRU thelru;
+  LRU mainlru;
+};
+
+class FACACHE
+{
+public:
+  FACACHE();
+  bool predict(const branch_record_c* br, uint *predicted_target_address);
+  bool update(const branch_record_c* br, uint actual_target_address);
+  bool needs_update();
+
+private:
+  uint data[M_WAYS];
+  uint tag[M_WAYS];
+  bool b_needs_update;
+
+  VLRU victimlru;
 };
 
 class RAS
@@ -105,12 +133,13 @@ public:
   void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
 
 private:
-  
+
   // ALPHA STUFF
   ALPHA alpha;
 
   // TARGET STUFF
-  CACHE thecache;
+  CACHE maincache;
+  CACHE victimcache;
   RAS ras;
 };
 

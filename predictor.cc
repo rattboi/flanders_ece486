@@ -2,7 +2,7 @@
 #define PC (br->instruction_addr)
 #define PC10 (keep_lower(br->instruction_addr,10))
 #define NEXT (br->instruction_next_addr)
-#define PC_LOWER (keep_lower(PC,INDEX))
+#define PC_LOWER (keep_lower(PC,M_INDEX))
 
 
 ALPHA::ALPHA()
@@ -92,20 +92,6 @@ void ALPHA::update(const branch_record_c* br, bool taken)
       ;
   }
 
-  /*
-  if (global_prediction != local_prediction) // misprediction occured, but one predictor was correct
-  {
-    if (taken == global_prediction)
-    {
-      if (alpha_choice[phistory] < 3)   alpha_choice[phistory]++;
-    }
-    else
-    {
-      if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
-    }
-  }
-  */
-
   // update path history
   phistory = keep_lower((phistory << 1) | taken, 12);
 
@@ -125,14 +111,17 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   pred =  alpha.get_prediction(br);   // true for taken, false for not taken
 
   //  TARGET PREDICTION
-  thecache.predict(br, predicted_target_address);  // updates *predicted_target_address
+  maincache.predict(br, predicted_target_address);  // updates *predicted_target_address
+
+  if ( maincache.needs_update )
+    victimcache.predict(br, predicted_target_address);
 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
 
   if (!(br->is_conditional))
     return TAKEN;
-  else 
+  else
     return pred;   // true for taken, false for not taken
 }
 
@@ -149,8 +138,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     ras.push_call(NEXT);
 
   // TARGET UPDATE
-  if( thecache.needs_update() )
-    thecache.update(br, actual_target_address);
+  if( maincache.needs_update() )
+    maincache.update(br, actual_target_address);
 
   return;
 }
@@ -159,7 +148,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 //RETURN ADDRESS STACK
 //
 RAS::RAS()
-{ 
+{
   stack_size = 64;
 };
 
@@ -197,9 +186,9 @@ CACHE::CACHE()
 {
     b_needs_update = false;
 
-    for (int i = 0; i < ENTRIES; i++)
+    for (int i = 0; i < M_ENTRIES; i++)
     {
-      for (int j = 0; j < WAYS; j++)
+      for (int j = 0; j < M_WAYS; j++)
       {
         data[i][j] = 0;
         tag[i][j] = 0;
@@ -211,12 +200,12 @@ CACHE::CACHE()
 // returns true (indicating update required) on misses (and sets *predicted_target_address to 0)
 bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
 {
-  for (int i = 0; i < WAYS; i++)
+  for (int i = 0; i < M_WAYS; i++)
   {
-    if( tag[PC_LOWER][i] == (PC >> INDEX) )
+    if( tag[PC_LOWER][i] == (PC >> M_INDEX) )
     {
       *predicted_target_address = data[PC_LOWER][i];
-      thelru.update_all(i, PC_LOWER); // update LRU counters
+      mainlru.update_all(i, PC_LOWER); // update LRU counters
       b_needs_update = false;
       return false; // does not need to update
     }
@@ -224,6 +213,8 @@ bool CACHE::predict(const branch_record_c* br, uint *predicted_target_address)
 
   // cycled through all ways and no tags matched.  Not in cache
   *predicted_target_address = 0;
+  // make it look in the victim
+
   b_needs_update = true;
   return true; // cache needs to update because this was a miss
 }
@@ -234,22 +225,22 @@ bool CACHE::update(const branch_record_c* br, uint actual_target_address)
   b_needs_update = false; // dismiss the flag
 
   // if there is an empty way, put the data there
-  for (int i = 0; i < WAYS; i++)
+  for (int i = 0; i < M_WAYS; i++)
   {
     if (data[PC_LOWER][i] == 0)
     {
-      tag[PC_LOWER][i] = (PC >> INDEX);  // store tag in empty way
+      tag[PC_LOWER][i] = (PC >> M_INDEX);  // store tag in empty way
       data[PC_LOWER][i] = actual_target_address; // store branch address in empty way
-      thelru.update_all(i, PC_LOWER);
+      mainlru.update_all(i, PC_LOWER);
       return false; // there was an empty place to put
     }
   }
 
   //else, we need to evict
-  uint victim = thelru.get_victim( PC_LOWER );
-  tag[PC_LOWER][victim] = (PC >> INDEX);  // use overwrite victim's tag field
+  uint victim = mainlru.get_victim( PC_LOWER );\
+  tag[PC_LOWER][victim] = (PC >> M_INDEX);  // use overwrite victim's tag field
   data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
-  thelru.update_all(victim, PC_LOWER);
+  mainlru.update_all(victim, PC_LOWER);
   return true;  // eviction was made
 }
 
@@ -259,14 +250,39 @@ bool CACHE::needs_update()
 }
 
 //
+// FACACHE
+//
+
+FACACHE()
+{
+
+}
+
+bool predict(const branch_record_c* br, uint *predicted_target_address)
+{
+
+}
+
+bool update(const branch_record_c* br, uint actual_target_address);
+{
+
+}
+bool needs_update();
+{
+
+}
+
+
+
+//
 // LRU
 //
 // counters must be initialized to a valid ordering (no repeating values)
 LRU::LRU()
 {
-  for (uint i = 0; i < ENTRIES; i++)
+  for (uint i = 0; i < M_ENTRIES; i++)
   {
-    for (uint j = 0; j < WAYS; j++)
+    for (uint j = 0; j < M_WAYS; j++)
     {
       counter[i][j]=j;
     }
@@ -278,9 +294,9 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 {
   uint way_value = counter[index][way_accessed];
 
-  for (uint i = 0; i < WAYS; i++)  // increase all counters
+  for (uint i = 0; i < M_WAYS; i++)  // increase all counters
   {
-    if ( counter[index][i] < way_value && counter[index][i] < WAYS-1) // if it is lower than the count of the way used
+    if ( counter[index][i] < way_value && counter[index][i] < M_WAYS-1) // if it is lower than the count of the way used
           counter[index][i]++;         // and less than the max count (saturating counters) then increase it
   }
 
@@ -291,9 +307,9 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 // given a cache line (index), returns the LRU (ie the highest count)
 uint LRU::get_victim( uint32_t index )
 {
-  for (uint i = 0; i < WAYS; i++)
+  for (uint i = 0; i < M_WAYS; i++)
   {
-    if (counter[index][i] == WAYS - 1)
+    if (counter[index][i] == M_WAYS - 1)
     {
       return i;
     }
@@ -315,5 +331,17 @@ int logbase2(int input)
 
   while (input >>= 1) ++result;
   return result;
+}
+
+//
+// VLRU
+//
+void update_all( uint way_accessed)
+{
+
+}
+uint get_victim()
+{
+
 }
 
