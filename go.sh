@@ -1,17 +1,29 @@
 #!/bin/bash
-cat orig/fp.txt
-echo -e "\nNew:"
+echo "FP Tests:"
 ./predictor traces/DIST-FP-1
+./predictor traces/DIST-FP-2
+./predictor traces/DIST-FP-3
+./predictor traces/DIST-FP-4
+./predictor traces/DIST-FP-5
 
-cat orig/int.txt
-echo -e "\n"New:
+echo "INT Tests:"
 ./predictor traces/DIST-INT-1
+./predictor traces/DIST-INT-2
+./predictor traces/DIST-INT-3
+./predictor traces/DIST-INT-4
+./predictor traces/DIST-INT-5
 
-cat orig/mm.txt
-echo -e "\n"New:
+echo "MM Tests:"
 ./predictor traces/DIST-MM-1
+./predictor traces/DIST-MM-2
+./predictor traces/DIST-MM-3
+./predictor traces/DIST-MM-4
+./predictor traces/DIST-MM-5
 
-cat orig/serv.txt
-echo -e "\n"New:
+echo "SERV Tests:"
 ./predictor traces/DIST-SERV-1
+./predictor traces/DIST-SERV-2
+./predictor traces/DIST-SERV-3
+./predictor traces/DIST-SERV-4
+./predictor traces/DIST-SERV-5
 printf '\a'

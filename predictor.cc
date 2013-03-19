@@ -113,9 +113,6 @@ PREDICTOR::~PREDICTOR()
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
 {
-  // ALPHA PREDICTION
-  bool pred;
-  pred =  alpha.get_prediction(br);   // true for taken, false for not taken
 
   //  TARGET PREDICTION
   bool main_miss;
@@ -129,10 +126,11 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
 
+  // ALPHA PREDICTION
   if (!(br->is_conditional))
     return TAKEN;
   else
-    return pred;   // true for taken, false for not taken
+    return alpha.get_prediction(br);   // true for taken, false for not taken
 }
 
 // Update the predictor after a prediction has been made.  This should accept
