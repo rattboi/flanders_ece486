@@ -14,3 +14,13 @@
 
 # Compiled binary
 predictor
+
+# Writeup Latex garbage
+doc/*.out
+doc/*.aux
+doc/*.pdf
+doc/*.log
+doc/*.synctex.gz
+
+# Office crap
+~$*
