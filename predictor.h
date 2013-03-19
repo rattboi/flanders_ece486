@@ -27,9 +27,9 @@
 #define NOT_TAKEN false
 
 #define M_ENTRIES 64   // number of entries in cache
-#define M_INDEX 6       //(logbase2(M_ENTRIES))    // log2()
 #define M_WAYS 8        // number of ways
 
+#define V_ENTRIES 1
 #define V_WAYS 30
 
 using namespace std;
@@ -54,7 +54,7 @@ public:
   CACHE(uint entries, uint ways);
   ~CACHE();
   bool predict(const uint32_t addr_idx, uint *predicted_target_address);
-  bool update(const uint32_t addr_idx, uint actual_target_address);
+  bool update(const uint32_t addr_idx, uint actual_target_address, uint *evicted_tag, uint *evicted_data);
   bool needs_update();
 
 private:
@@ -123,6 +123,7 @@ private:
 
   // TARGET STUFF
   CACHE *maincache;
+  CACHE *victimcache;
   RAS ras;
 };
 

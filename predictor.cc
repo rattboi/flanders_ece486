@@ -103,6 +103,7 @@ void ALPHA::update(const branch_record_c* br, bool taken)
 PREDICTOR::PREDICTOR()
 {
   maincache = new CACHE(M_ENTRIES, M_WAYS);
+  victimcache = new CACHE(V_ENTRIES, V_WAYS);
 }
 
 PREDICTOR::~PREDICTOR()
@@ -117,7 +118,14 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
   pred =  alpha.get_prediction(br);   // true for taken, false for not taken
 
   //  TARGET PREDICTION
-  maincache->predict(PC, predicted_target_address);  // updates *predicted_target_address
+  bool main_miss;
+  bool temp = true;
+
+  main_miss = maincache->predict(PC, predicted_target_address);  // updates *predicted_target_address
+
+  if ( main_miss )
+
+    temp = victimcache->predict(PC, predicted_target_address);
 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
@@ -141,9 +149,15 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     ras.push_call(NEXT);
 
   // TARGET UPDATE
-  if( maincache->needs_update() )
-    maincache->update(PC, actual_target_address);
+  bool evicted = false;
+  uint evicted_tag;
+  uint evicted_data;
 
+  if( maincache->needs_update() )
+    evicted = maincache->update(PC, actual_target_address, &evicted_tag, &evicted_data);
+
+  if ( evicted )
+    victimcache->update(evicted_tag, evicted_data, 0, 0);
   return;
 }
 
@@ -187,7 +201,7 @@ bool RAS::push_call(uint address)
 //
 CACHE::CACHE(uint m_entries, uint m_ways)
 {
-    entries = m_entries; 
+    entries = m_entries;
     ways = m_ways;
     idx_bits = logbase2(entries);
 
@@ -257,7 +271,7 @@ bool CACHE::predict(const uint32_t addr_idx, uint *predicted_target_address)
 }
 
 // no need to call unless misprediction or empty
-bool CACHE::update(const uint32_t addr_idx, uint actual_target_address)
+bool CACHE::update(const uint32_t addr_idx, uint actual_target_address, uint *evicted_tag, uint *evicted_data)
 {
   b_needs_update = false; // dismiss the flag
 
@@ -275,6 +289,13 @@ bool CACHE::update(const uint32_t addr_idx, uint actual_target_address)
 
   //else, we need to evict
   uint victim = lru->get_victim( PC_LOWER );
+
+  if (evicted_tag && evicted_data)
+  {
+    *evicted_tag = (((tag[PC_LOWER][victim])<<idx_bits) | PC_LOWER);
+    *evicted_data = data[PC_LOWER][victim];
+  }
+
   tag[PC_LOWER][victim] = (addr_idx >> idx_bits);  // use overwrite victim's tag field
   data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
   lru->update_all(victim, PC_LOWER);
@@ -296,7 +317,7 @@ LRU::LRU(uint m_entries, uint m_ways)
   ways = m_ways;
 
   counter = new uint*[sizeof(uint *) * entries];
-  
+
   for (int i = 0; i < entries; i++)
     counter[i] = new uint[sizeof(uint) * ways];
 
