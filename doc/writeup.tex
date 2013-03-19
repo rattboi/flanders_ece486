@@ -51,6 +51,7 @@ The strength of this design is that it can take advantage of branch patterns occ
 A few implementation details were absent from Kessler's paper, so assumptions were made to create the most accurate predictor possible.  These fell into three categories:  Initialization values for the saturating counters and path history, under what conditions updates should occur, and how to handle unconditional branches (jumps).
 
 \subsection{Initialization Values}
+To start, we initializing everything to zero. This was to verify that our logic was working correctly. After verifying that things looked like they were working, we decided to see if tuning these parameters would have a major effect on our performance. Zeros would imply that our default state should be strongly not taken for both the local and global predictors, and strongly favoring the local predictor for the predictor predictor.
 \subsection{Conditional Updates}
 \subsection{Unconditional Branches}
 
