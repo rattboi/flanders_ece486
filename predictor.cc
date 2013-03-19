@@ -164,7 +164,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 //
 RAS::RAS()
 {
-  stack_size = 27;
+  stack_size = 33;
 };
 
 uint RAS::pop_ret_pred()
