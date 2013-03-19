@@ -7,6 +7,8 @@
 \usepackage[colorlinks=true,urlcolor=black,linkcolor=black]{hyperref}
 \usepackage[margin=1.0in]{geometry}
 \usepackage{multicol}
+\usepackage{type1cm}
+\usepackage{lettrine}
 %\pagestyle{fancy}
 
 %redefines subsections with letters instesad of numbers
@@ -38,9 +40,9 @@ ECE 486/586 Final Project }
 \textbf{Keywords:} Branch Prediction, Branch Target Prediction, Simulation, Heuristics, ISA, 0xBEEFA55
 
 \section{Background Information}
-For this project, we were required to duplicate the tournament branch predictor used in the Alpha 21264 processor, then design a corresponding branch target predictor.  The size budget for both parts of the project (Alpha predictor and branch target predictor) was 8Kb.  The entire system was then tested against 20 instruction traces from an unknown ISA. \\\\
+\lettrine{D}{uplication} of the tournament branch predictor used in the Alpha 21264 processor was the first objective of this project.  We then designed a corresponding branch target predictor.  The size budget for both parts of the project (Alpha predictor and branch target predictor) was 8Kb.  The entire system was then tested against 20 instruction traces from an unknown ISA. \\\\
 There were additional constraints as well: all table sizes had to be powers of 2, multiplying or dividing by numbers other than powers of two was not permitted, and tables with associativity $\ge$ 8 incurred a penalty equal to the size of the table.\\\\
-Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor.  Figure \ref{alpha} shows our implementation of the Alpha predictor.  One key difference between our implementation and Kessler's is that our predictor is only called on conditional branches, not all instructions.\\\\\section{Branch Prediction}\centerimage{\includegraphics[width=\columnwidth]{alpha.png}}{Alpha Predictor}{alpha}\centerimage{\includegraphics[width=\columnwidth]{phistory.png}}{Path History Shift Register}{phistory}
+Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor.  Figure \ref{alpha} shows our implementation of the Alpha predictor.  One key difference between our implementation and Kessler's is that our predictor is only called on conditional branches, not all instructions.\\\section{Branch Prediction}\centerimage{\includegraphics[width=\columnwidth]{alpha.png}}{Alpha Predictor}{alpha}\centerimage{\includegraphics[width=\columnwidth]{phistory.png}}{Path History Shift Register}{phistory}
 The Alpha predictor is a tournament predictor, meaning that it makes multiple predictions (based on the global and local histories) and then chooses between the prediction that has  been the most accurate, based on the path history.  The path history (illustrated in figure \ref{phistory}) is a shift register that maintains a history of the most recent 12 conditional branches by shifting in 1 or 0 for taken or not taken branches respectively.\\\\
 Path history is used as an index into the 4,096-entry choice prediction table, which maintains 2-bit saturating counters at each location which indicate whether--given the current path history--the local or global prediction has been more accurate.\\\\  
 The global history table is also indexed using the path history, and consists of 4,096 2-bit saturating counters indicating whether--given the current global path history--the next branch is likely to be taken or not taken.\\\\
