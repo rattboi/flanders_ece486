@@ -116,12 +116,11 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   //  TARGET PREDICTION
   bool main_miss;
-  bool temp = true;
 
   main_miss = maincache->predict(PC, predicted_target_address);  // updates *predicted_target_address
 
   if (main_miss)
-    temp = victimcache->predict(PC, predicted_target_address);
+    victimcache->predict(PC, predicted_target_address);
 
   if (br->is_return)
     *predicted_target_address = ras.pop_ret_pred();
@@ -154,7 +153,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
     evicted = maincache->update(PC, actual_target_address, &evicted_tag, &evicted_data);
 
   if ( evicted )
-    victimcache->update(evicted_tag, evicted_data, 0, 0);
+    victimcache->update(evicted_tag, evicted_data, NULL, NULL);
 
   return;
 }
@@ -164,7 +163,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 //
 RAS::RAS()
 {
-  stack_size = 33;
+  stack_size = RAS_ENTRIES;
 };
 
 uint RAS::pop_ret_pred()
