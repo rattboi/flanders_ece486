@@ -29,8 +29,8 @@
 #define M_ENTRIES 64   // number of entries in cache
 #define M_WAYS 8        // number of ways
 
-#define V_ENTRIES 1
-#define V_WAYS 30
+#define V_ENTRIES 8
+#define V_WAYS 8
 
 using namespace std;
 

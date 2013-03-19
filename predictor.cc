@@ -123,8 +123,7 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 
   main_miss = maincache->predict(PC, predicted_target_address);  // updates *predicted_target_address
 
-  if ( main_miss )
-
+  if (main_miss)
     temp = victimcache->predict(PC, predicted_target_address);
 
   if (br->is_return)
@@ -158,6 +157,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 
   if ( evicted )
     victimcache->update(evicted_tag, evicted_data, 0, 0);
+
   return;
 }
 
@@ -166,7 +166,7 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
 //
 RAS::RAS()
 {
-  stack_size = 64;
+  stack_size = 27;
 };
 
 uint RAS::pop_ret_pred()
@@ -347,8 +347,8 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 
   for (int i = 0; i < ways; i++)  // increase all counters
   {
-    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways-1)) // if it is lower than the count of the way used
-          counter[index][i]++;         // and less than the max count (saturating counters) then increase it
+    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways-1))  // if it is lower than the count of the way used
+      counter[index][i]++;                                // and less than the max count (saturating counters) then increase it
   }
 
   counter[index][way_accessed] = 0;  // and set the way accessed to 0 (most recently used)
