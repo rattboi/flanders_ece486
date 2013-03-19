@@ -4,21 +4,19 @@
 #define NEXT (br->instruction_next_addr)
 #define PC_LOWER (keep_lower(addr_idx,idx_bits))
 
-int logbase2(int input);
-
 ALPHA::ALPHA()
 {
   // set all our data structures to initial values
   for (int i = 0; i < SIZE_1K; i++)
   {
     alpha_lht[i] = 0;
-    alpha_lpt[i] = 3;
+    alpha_lpt[i] = WEAK_NT_LOCAL;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
   {
-    alpha_gpt[i] = 1;
-    alpha_choice[i] = 2; //default to weakly global
+    alpha_gpt[i]    = WEAK_NT_GLOBAL;
+    alpha_choice[i] = WEAK_GLOB_PRED; 
   }
 
   phistory = 0;
@@ -30,23 +28,21 @@ bool ALPHA::get_local_predict(const uint32_t address)
   uint16_t curr = alpha_lht[alpha_lht_ind];
   uint16_t pred_bits = alpha_lpt[curr];
 
-  return (pred_bits & 4)>>2;
+  return (pred_bits >> (SAT_LOCAL - 1));
 }
 
 bool ALPHA::get_global_predict()
 {
-  return (alpha_gpt[phistory]&2)>>1;
+  return (alpha_gpt[phistory] >> (SAT_GLOBAL - 1));
 }
 
 // return of PRED_LOCAL means use local history
 // return of PRED_GLOBAL means use global history
 bool ALPHA::choose_predictor()
 {
-  uint16_t curr_alpha_choice_entry;                      // holds current choice predict table entry
-  curr_alpha_choice_entry = alpha_choice[phistory];               // current alpha_choice entry, indexed by path history
-  curr_alpha_choice_entry = ( curr_alpha_choice_entry & 2 );      // only care about bit 1 of saturating counter
-  if (curr_alpha_choice_entry == 0)  return PRED_LOCAL;  // bit 1 was not set
-  else return PRED_GLOBAL; // bit 1 was set
+  uint16_t curr_alpha_choice_entry;                     // holds current choice predict table entry
+  curr_alpha_choice_entry = alpha_choice[phistory];     // current alpha_choice entry, indexed by path history
+  return ( curr_alpha_choice_entry >> (SAT_PRED - 1));  // only care about bit 1 of saturating counter
 }
 
 bool ALPHA::get_prediction(const branch_record_c* br)
@@ -66,26 +62,28 @@ void ALPHA::update(const branch_record_c* br, bool taken)
   // update prediction tables
   if (taken)
   {
-    if (alpha_lpt[curr] < 7)      alpha_lpt[curr]++;
-    if (alpha_gpt[phistory] < 3)  alpha_gpt[phistory]++;
+    if (alpha_lpt[curr] < SAT_LOCAL_MAX)      alpha_lpt[curr]++;
+    if (alpha_gpt[phistory] < SAT_GLOBAL_MAX) alpha_gpt[phistory]++;
   }
   else
   {
-    if (alpha_lpt[curr] > 0)      alpha_lpt[curr]--;
-    if (alpha_gpt[phistory] > 0)  alpha_gpt[phistory]--;
+    if (alpha_lpt[curr] > SAT_LOCAL_MIN)      alpha_lpt[curr]--;
+    if (alpha_gpt[phistory] > SAT_GLOBAL_MIN) alpha_gpt[phistory]--;
   }
 
   // update prediction choice table
 
+  // concatenate global and local predictors
+  // damn you, verilog, for being so nice!
   switch(((global_prediction == taken)<<1)|(local_prediction == taken))
   {
     case 0:
       break;
     case 1:
-      if (alpha_choice[phistory] > 0)   alpha_choice[phistory]--;
+      if (alpha_choice[phistory] > SAT_PRED_MIN) alpha_choice[phistory]--;
       break;
     case 2:
-      if (alpha_choice[phistory] < 3)   alpha_choice[phistory]++;
+      if (alpha_choice[phistory] < SAT_PRED_MAX) alpha_choice[phistory]++;
       break;
     case 3:
       break;
@@ -94,10 +92,10 @@ void ALPHA::update(const branch_record_c* br, bool taken)
   }
 
   // update path history
-  phistory = keep_lower((phistory << 1) | taken, 12);
+  phistory = keep_lower((phistory << 1) | taken, PHISTORY_BITS);
 
   // update local history table:  shift left, OR with taken, keep 10 bits
-  alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, 10);
+  alpha_lht[PC10] = keep_lower((alpha_lht[PC10] << 1) | taken, LHISTORY_BITS);
 }
 
 PREDICTOR::PREDICTOR()
@@ -344,7 +342,7 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 
   for (int i = 0; i < ways; i++)  // increase all counters
   {
-    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways-1))  // if it is lower than the count of the way used
+    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways - 1))  // if it is lower than the count of the way used
       counter[index][i]++;                                // and less than the max count (saturating counters) then increase it
   }
 

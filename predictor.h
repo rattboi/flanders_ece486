@@ -15,8 +15,11 @@
 #include "op_state.h"   // defines op_state_c (architectural state) class
 #include "tread.h"      // defines branch_record_c class
 
-#define SIZE_1K 1<<10
-#define SIZE_4K 1<<12
+#define SIZE_1K (1<<10)
+#define SIZE_4K (1<<12)
+
+#define PHISTORY_BITS 12
+#define LHISTORY_BITS 10
 
 #define PRED_LOCAL false
 #define PRED_GLOBAL true
@@ -31,6 +34,22 @@
 #define V_WAYS 8        // number of ways 
 
 #define RAS_ENTRIES 33  // max number of elements in RAS stack
+
+#define WEAK_NT_LOCAL  3
+#define WEAK_NT_GLOBAL 1
+#define WEAK_GLOB_PRED 2
+
+#define SAT_LOCAL  3
+#define SAT_GLOBAL 2
+#define SAT_PRED   2
+
+#define SAT_LOCAL_MIN  0
+#define SAT_GLOBAL_MIN 0
+#define SAT_PRED_MIN   0
+
+#define SAT_LOCAL_MAX  7
+#define SAT_GLOBAL_MAX 3
+#define SAT_PRED_MAX   3
 
 using namespace std;
 
