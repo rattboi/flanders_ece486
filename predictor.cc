@@ -4,8 +4,6 @@
 #define NEXT (br->instruction_next_addr)
 #define PC_LOWER (keep_lower(addr_idx,idx_bits))
 
-int logbase2(int input);
-
 ALPHA::ALPHA()
 {
   // set all our data structures to initial values
