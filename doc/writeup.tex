@@ -1,0 +1,56 @@
+\documentclass[twocolumn]{article}
+\usepackage{graphicx}
+\usepackage{fancyhdr} 
+\usepackage{fancybox}
+\usepackage{float}
+\usepackage{listings}
+\usepackage[colorlinks=true,linkcolor=black]{hyperref}
+\usepackage[margin=1.0in]{geometry}
+\pagestyle{fancy}
+
+%redefines subsections with letters instesad of numbers
+%\renewcommand{\thesubsection}{\thesection.\alph{subsection}}
+
+% Center Image Command
+\newcommand{\centerimage}[3]{
+\begin{figure}[ht!]  
+\begin{center} #1
+\caption{#2}
+\label{#3}
+\end{center}
+\end{figure}}
+
+\begin{document}
+\section{Abstract}
+\textit{  }\\
+
+\textbf{Keywords:} Branch Prediction, Branch Target Prediction, Simulation, Heuristics, ISA, 0xBEEFA55
+
+\section{Background Information}
+For this project, we were required to duplicate the tournament branch predictor used in the Alpha 21264 processor, then design a corresponding branch target predictor.  The size budget for both parts of the project (Alpha predictor and branch target predictor) was 8Kb.  The entire system was then tested against 20 instruction traces from an unknown ISA. \\\\
+There were additional constraints as well: all table sizes had to be powers of 2, multiplying or dividing by numbers other than powers of two was not permitted, and tables with associativity $\ge$ 8 incurred a penalty equal to the size of the table.
+
+\section{Branch Predictor}
+Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor. 
+
+\subsection{Assumptions}
+\subsubsection{Initialization Values}
+\subsubsection{Conditional Updates}
+\subsubsection{Unconditional Branches}
+
+\section{Branch Target Predictor} 
+\subsection{Development History}
+\subsubsection{Direct Mapped}
+\subsubsection{Relative Offset Table}
+\subsection{Final Design}
+\subsubsection{Dynamic Objects}
+\subsubsection{Main Cache}
+\subsubsection{Return Address Stack}
+\subsubsection{Victim Cache}
+\section{Size Budget}
+\section{Testing Methodology}
+\section{Results}
+\section{Conclusion}
+\appendix
+the codes
+\end{document}
