@@ -1,12 +1,12 @@
 \documentclass[twocolumn]{article}
 \usepackage{graphicx}
-\usepackage{fancyhdr} 
-\usepackage{fancybox}
+%\usepackage{fancyhdr} 
+%\usepackage{fancybox}
 \usepackage{float}
 \usepackage{listings}
 \usepackage[colorlinks=true,linkcolor=black]{hyperref}
 \usepackage[margin=1.0in]{geometry}
-\pagestyle{fancy}
+%\pagestyle{fancy}
 
 %redefines subsections with letters instesad of numbers
 %\renewcommand{\thesubsection}{\thesection.\alph{subsection}}
@@ -31,12 +31,19 @@ For this project, we were required to duplicate the tournament branch predictor 
 There were additional constraints as well: all table sizes had to be powers of 2, multiplying or dividing by numbers other than powers of two was not permitted, and tables with associativity $\ge$ 8 incurred a penalty equal to the size of the table.
 
 \section{Branch Predictor}
-Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor. 
+Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor.  Figure \ref{alpha} shows our implementation of the Alpha predictor.  One key difference between our implementation and Kessler's is that our predictor is only called on conditional branches, not all instructions.\\\\
+The Alpha predictor is a tournament predictor, meaning that it makes multiple predictions (based on the global and local histories) and then chooses between the prediction that has  been the most accurate, based on the path history.  The path history (illustrated in figure \ref{phistory}) is a shift register that maintains a history of the most recent 12 conditional branches by shifting in 1 or 0 for taken or not taken branches respectively.\\\\
+\centerimage{\includegraphics[width=\columnwidth]{phistory.png}}{Path History Shift Register}{phistory} Path history is used as an index into the 4,096-entry choice prediction table, which maintains 2-bit saturating counters at each location which indicate whether--given the current path history--the local or global prediction has been more accurate.\\\\  
+The global history table is also indexed using the path history, and consists of 4,096 2-bit saturating counters indicating whether--given the current global path history--the next branch is likely to be taken or not taken.\\\\
+The local history table is indexed by the least significant 10 bits of the program counter.  Each entry in the local history table is a 10-bit path history for instructions (in our implementation, \textit{conditional branches}) with the same least significant 10 bits.  These local histories are used as indices into the local prediction table, which consists of 1,024 3-bit saturating counters indicating whether--given a local path history--the next branch is likely to be taken or not taken.\\\\
+The strength of this design is that it can take advantage of branch patterns occurring within working sets of various sizes, with the local history being more useful with small working sets, and the global history being more useful for large working set.  \centerimage{\includegraphics[width=\columnwidth]{alpha.png}}{Alpha
+  Predictor}{alpha}
 
-\subsection{Assumptions}
-\subsubsection{Initialization Values}
-\subsubsection{Conditional Updates}
-\subsubsection{Unconditional Branches}
+A few implementation details were absent from Kessler's paper, so assumptions were made to create the most accurate predictor possible.  These fell into three categories:  Initialization values for the saturating counters and path history, under what conditions updates should occur, and how to handle unconditional branches (jumps).
+
+\subsection{Initialization Values}
+\subsection{Conditional Updates}
+\subsection{Unconditional Branches}
 
 \section{Branch Target Predictor} 
 \subsection{Development History}
