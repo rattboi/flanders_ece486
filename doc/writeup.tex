@@ -86,9 +86,9 @@ Very soon after the direct-mapped cache approach was abandoned, the decision was
 The main cache was given highest priority in terms of space allocation.  The bold entries in table \ref{sizebydim} (Appendix A) indicate the largest possible configurations we could accommodate while staying under 4,382 bytes.  Table \ref{mispersize} (Appendix A) shows the relative performance  of select cache configurations.\\\\
 Looking at the results from tables \ref{sizebydim} and \ref{mispersize}, the 64-set x 8-way configuration resulted in the best performance under the size constraints of our project.  We also took note of the fact that a 128-set x 4-way had the second best performance but used over 100 bytes less space.  If a problem had arisen that an additional 100 bytes could have solved, we would have made this change, but ultimately this was unnecessary. 
 \subsubsection{Victim Cache}
-The victim cache was given second highest priority in terms of space allocation.  Our goal was to maximize associativity while still leaving some space remaining for the return address stack.\\\\ 
-After deciding to use the 64x8 main cache, we had 542 bytes of space remaining.
+The victim cache was given second highest priority in terms of space allocation.  Since the primary purpose of the victim cache is to accommodate aliasing spillover, we wanted the maximum associativity possible given our available space.   After deciding to use the 64x8 main cache, we had 542 bytes of space remaining.  We referred again to table \ref{sizebydim} and selected the 8-sets x 8-ways cache, with a size of 504 bytes.  
 \subsubsection{Return Address Stack}
+The return address stack was much more flexible in terms of its size, since we were not limited to entry amounts that were powers of 2.  Hence, it was expanded to take up all of the remaining space, which yielded a 33-entry stack. 
 
 \section{Size Budget}
 \section{Testing Methodology}
