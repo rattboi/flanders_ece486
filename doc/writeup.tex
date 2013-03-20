@@ -40,7 +40,7 @@ ECE 486/586 Final Project }
 \textbf{Keywords:} Branch Prediction, Branch Target Prediction, Simulation, Heuristics, ISA, 0xBEEFA55
 
 \section{Background Information}
-\lettrine{D}{uplication} of the tournament branch predictor used in the Alpha 21264 processor was the first objective of this project.  We then designed a corresponding branch target predictor.  The size budget for both parts of the project (Alpha predictor and branch target predictor) was 8Kb.  The entire system was then tested against 20 instruction traces from an unknown ISA. \\\\
+\lettrine{D}{uplication} of the tournament branch predictor used in the Alpha 21264 processor was the first objective of this project.  We then designed a corresponding branch target predictor.  The size budget for both parts of the project (Alpha predictor and branch target predictor) was 8,096 bytes.  The entire system was then tested against 20 instruction traces from an unknown ISA. \\\\
 There were additional constraints as well: all table sizes had to be powers of 2, multiplying or dividing by numbers other than powers of two was not permitted, and tables with associativity $\ge$ 8 incurred a penalty equal to the size of the table.\\\\
 Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor.  Figure \ref{alpha} shows our implementation of the Alpha predictor.  One key difference between our implementation and Kessler's is that our predictor is only called on conditional branches, not all instructions.\\\section{Branch Prediction}\centerimage{\includegraphics[width=\columnwidth]{img/alpha.png}}{Alpha Predictor}{alpha}\centerimage{\includegraphics[width=\columnwidth]{img/phistory.png}}{Path History Shift Register}{phistory}
 The Alpha predictor is a tournament predictor, meaning that it makes multiple predictions (based on the global and local histories) and then chooses between the prediction that has  been the most accurate, based on the path history.  The path history (illustrated in figure \ref{phistory}) is a shift register that maintains a history of the most recent 12 conditional branches by shifting in 1 or 0 for taken or not taken branches respectively.\\\\
@@ -62,16 +62,18 @@ In a high-performance processor, simply predicting whether a branch is taken or 
 Our development process was much like a small weasel--somewhat iterative, yet dynamic and highly agile.  
 
 \subsubsection{Direct Mapped}
-Our initial design centered around a single, large direct-mapped cache with 1024 entries, each storing a single 32-bit address, for a total size of 4096 bytes.  This approach was appealing because of it's extremely simple implementation, and because it eliminated the need to store tags for any of the data.  Tags are not needed because there was no guarantee that the data returned was ``correct'' so any aliasing simply results in in a misprediction, which though not helpful is not catastrophic. \\\\
+Our initial design centered around a single, large direct-mapped cache with 1,024 entries, each storing a single 32-bit address, for a total size of 4,096 bytes.  This approach was appealing because of it's extremely simple implementation, and because it eliminated the need to store tags for any of the data.  Tags are not needed because there was no guarantee that the data returned was ``correct'' so any aliasing simply results in in a misprediction, which though not helpful is not catastrophic. \\\\
 Upon completing this design, initial simulations using the first 4 trace files (FP-1, INT-1, MM-1, SERV-1) confirmed that aliasing was indeed a much larger problem than we had anticipated.
 
 \subsubsection{Relative Offset Table}
-In order to fit ``more cache'' into the available space, we redesigned the large cache from 3.1.1 to operate only on PC-relative branches, and only store the offset from the PC, which was only 24 bits.  This reduced the size of the table by 25\% to 3072 bytes.  We had planned on using the additional 1024 bytes freed to create a smaller, wider cache that could store full 32-bit addresses that could not fit into the relative offset cache, however again, the amount of aliasing--even when considering only PC-relative branches--was far too high.\\\\
+In order to fit ``more cache'' into the available space, we redesigned the large cache from 3.1.1 to operate only on PC-relative branches, and only store the offset from the PC, which was only 24 bits.  This reduced the size of the table by 25\% to 3,072 bytes.  We had planned on using the additional 1024 bytes freed to create a smaller, wider cache that could store full 32-bit addresses that could not fit into the relative offset cache, however again, the amount of aliasing--even when considering only PC-relative branches--was far too high.\\\\
 The smaller, 32-bit wide cache was never implemented because of the amount of aliasing that occurred with direct mapped caches, even when we increased the cache to be unrealistically large. 
 
 
 \subsection{Final Design}
+Our final design abandoned all direct-mapped tables and focused on multi-way associativity to reduce aliasing.  Our final design consisted of a large 512-entry main cache (64 sets x 8 ways), a 64-entry victim cache (8 sets x 8 ways), and a 33-entry return address stack to handle returns. 
 \subsubsection{Dynamic Objects}
+Very soon after the direct-mapped cache approach was abandoned, the decision was made to design all objects with dynamic sizes, so that we could easily experiment with differently sized caches with no code changes.  Parameterized LRU and Cache objects greatly accelerated all testing and simulation efforts. 
 \subsubsection{Main Cache}
 \subsubsection{Return Address Stack}
 \subsubsection{Victim Cache}
