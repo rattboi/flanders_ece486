@@ -16,7 +16,7 @@ ALPHA::ALPHA()
   for (int i = 0; i < SIZE_4K; i++)
   {
     alpha_gpt[i]    = ALPHA_GLOBAL_INIT;
-    alpha_choice[i] = ALPHA_CHOICE_INIT; 
+    alpha_choice[i] = ALPHA_CHOICE_INIT;
   }
 
   phistory = 0;
@@ -40,9 +40,11 @@ bool ALPHA::get_global_predict()
 // return of PRED_GLOBAL means use global history
 bool ALPHA::choose_predictor()
 {
-  uint16_t curr_alpha_choice_entry;                     // holds current choice predict table entry
-  curr_alpha_choice_entry = alpha_choice[phistory];     // current alpha_choice entry, indexed by path history
-  return ( curr_alpha_choice_entry >> (SAT_PRED - 1));  // only care about bit 1 of saturating counter
+  uint16_t curr_alpha_choice_entry;  // holds current choice predict table entry
+  // current alpha_choice entry, indexed by path history
+  curr_alpha_choice_entry = alpha_choice[phistory];
+  // only care about bit 1 of saturating counter
+  return ( curr_alpha_choice_entry >> (SAT_PRED - 1));
 }
 
 bool ALPHA::get_prediction(const branch_record_c* br)
@@ -50,7 +52,8 @@ bool ALPHA::get_prediction(const branch_record_c* br)
   local_prediction = get_local_predict(PC10);
   global_prediction = get_global_predict();
 
-  final_prediction = (choose_predictor() == PRED_LOCAL) ? local_prediction : global_prediction;
+  final_prediction = (choose_predictor() == PRED_LOCAL) ?
+    local_prediction : global_prediction;
 
   return final_prediction;
 }
@@ -109,13 +112,15 @@ PREDICTOR::~PREDICTOR()
   delete maincache;
 }
 
-bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address)
+bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os,
+                                uint *predicted_target_address)
 {
 
   //  TARGET PREDICTION
   bool main_miss;
 
-  main_miss = maincache->predict(PC, predicted_target_address);  // updates *predicted_target_address
+  // maincache->predict will update *predicted_target_address
+  main_miss = maincache->predict(PC, predicted_target_address);
 
   if (main_miss)
     victimcache->predict(PC, predicted_target_address);
@@ -133,7 +138,8 @@ bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os, 
 // Update the predictor after a prediction has been made.  This should accept
 // the branch record (br) and architectural state (os), as well as a third
 // argument (taken) indicating whether or not the branch was taken.
-void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address)
+void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os,
+                                  bool taken, uint actual_target_address)
 {
   // ALPHA UPDATE
   if (br->is_conditional)
@@ -148,7 +154,8 @@ void PREDICTOR::update_predictor(const branch_record_c* br, const op_state_c* os
   uint evicted_data;
 
   if( maincache->needs_update() )
-    evicted = maincache->update(PC, actual_target_address, &evicted_tag, &evicted_data);
+    evicted = maincache->update(PC, actual_target_address, &evicted_tag,
+                                  &evicted_data);
 
   if ( evicted )
     victimcache->update(evicted_tag, evicted_data, NULL, NULL);
@@ -242,8 +249,10 @@ CACHE::~CACHE()
   if (tag)
     delete [] tag;
 }
-// returns false (indicating no update needed) on hits (and updates *predicted_target_address )
-// returns true (indicating update required) on misses (and sets *predicted_target_address to 0)
+// returns false (indicating no update needed) on hits, and updates
+//   *predicted_target_address
+// returns true (indicating update required) on misses,
+//   and sets *predicted_target_address to 0
 bool CACHE::predict(const uint32_t addr_idx, uint *predicted_target_address)
 {
   for (int i = 0; i < ways; i++)
@@ -266,7 +275,8 @@ bool CACHE::predict(const uint32_t addr_idx, uint *predicted_target_address)
 }
 
 // no need to call unless misprediction or empty
-bool CACHE::update(const uint32_t addr_idx, uint actual_target_address, uint *evicted_tag, uint *evicted_data)
+bool CACHE::update(const uint32_t addr_idx, uint actual_target_address,
+                    uint *evicted_tag, uint *evicted_data)
 {
   b_needs_update = false; // dismiss the flag
 
@@ -276,7 +286,7 @@ bool CACHE::update(const uint32_t addr_idx, uint actual_target_address, uint *ev
     if (data[PC_LOWER][i] == 0)
     {
       tag[PC_LOWER][i] = (addr_idx >> idx_bits);  // store tag in empty way
-      data[PC_LOWER][i] = actual_target_address; // store branch address in empty way
+      data[PC_LOWER][i] = actual_target_address; // store address in empty way
       lru->update_all(i, PC_LOWER);
       return false; // there was an empty place to put
     }
@@ -291,7 +301,7 @@ bool CACHE::update(const uint32_t addr_idx, uint actual_target_address, uint *ev
     *evicted_data = data[PC_LOWER][victim];
   }
 
-  tag[PC_LOWER][victim] = (addr_idx >> idx_bits);  // use overwrite victim's tag field
+  tag[PC_LOWER][victim] = (addr_idx >> idx_bits);  // overwrite victim's tag field
   data[PC_LOWER][victim] = actual_target_address; // overwrite victim's data field
   lru->update_all(victim, PC_LOWER);
   return true;  // eviction was made
@@ -342,11 +352,13 @@ void LRU::update_all( uint way_accessed, uint32_t index)
 
   for (int i = 0; i < ways; i++)  // increase all counters
   {
-    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways - 1))  // if it is lower than the count of the way used
-      counter[index][i]++;                                // and less than the max count (saturating counters) then increase it
+    // if a counter is lower than that of the way used, and less than the max
+    //   count (saturating counter) then increase it
+    if ( counter[index][i] < way_value && counter[index][i] < (uint)(ways - 1))
+      counter[index][i]++;
   }
 
-  counter[index][way_accessed] = 0;  // and set the way accessed to 0 (most recently used)
+  counter[index][way_accessed] = 0;  // set way_accessed to 0 (MRU)
   return;
 }
 
