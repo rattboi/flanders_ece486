@@ -23,6 +23,14 @@
 \end{center}
 \end{figure}}
 
+\newcommand{\centertable}[3]{
+\begin{table}[ht!]  
+\begin{center} #1
+\caption{#2}
+\label{#3}
+\end{center}
+\end{table}}
+
 \title{\textbf{Branch Predictor and Branch Target Buffer} \\
 ECE 486/586 Final Project }
 \author{Eric Krause \hspace{1.4in} Bradon Kanyid\\
@@ -59,22 +67,22 @@ To start, we initializing everything to zero. This was to verify that our logic 
 In a high-performance processor, simply predicting whether a branch is taken or not taken accurately is not enough to eliminate pipeline stalls.  If taken, the destination address of the branch must also be predicted so that instructions beginning at the target address can be speculatively executed. 
  
 \subsection{Development History}
-Our development process was much like a small weasel--somewhat iterative, yet dynamic and highly agile.  
-
+Our development process was much like a small weasel--somewhat iterative, yet dynamic and highly agile.  The space used for the branch predictor is 3,713 bytes (see table \ref{sizebudget} in Appendix A), meaning that any branch target predictor design had to fit in less than 4,382 bytes.
 \subsubsection{Direct Mapped}
-Our initial design centered around a single, large direct-mapped cache with 1,024 entries, each storing a single 32-bit address, for a total size of 4,096 bytes.  This approach was appealing because of it's extremely simple implementation, and because it eliminated the need to store tags for any of the data.  Tags are not needed because there was no guarantee that the data returned was ``correct'' so any aliasing simply results in in a misprediction, which though not helpful is not catastrophic. \\\\
+Our initial design centered around using as much of the remaining 4,382 bytes as possible to create a single, large direct-mapped cache with 1,024 entries, each storing a single 32-bit address, for a total size of 4,096 bytes.  This approach was appealing because of it's extremely simple implementation, and because it eliminated the need to store tags for any of the data.  Tags are not needed because there was no guarantee that the data returned was ``correct'' so any aliasing simply results in in a misprediction, which though not helpful is not catastrophic. \\\\
 Upon completing this design, initial simulations using the first 4 trace files (FP-1, INT-1, MM-1, SERV-1) confirmed that aliasing was indeed a much larger problem than we had anticipated.
 
 \subsubsection{Relative Offset Table}
 In order to fit ``more cache'' into the available space, we redesigned the large cache from 3.1.1 to operate only on PC-relative branches, and only store the offset from the PC, which was only 24 bits.  This reduced the size of the table by 25\% to 3,072 bytes.  We had planned on using the additional 1024 bytes freed to create a smaller, wider cache that could store full 32-bit addresses that could not fit into the relative offset cache, however again, the amount of aliasing--even when considering only PC-relative branches--was far too high.\\\\
 The smaller, 32-bit wide cache was never implemented because of the amount of aliasing that occurred with direct mapped caches, even when we increased the cache to be unrealistically large. 
 
-
 \subsection{Final Design}
 Our final design abandoned all direct-mapped tables and focused on multi-way associativity to reduce aliasing.  Our final design consisted of a large 512-entry main cache (64 sets x 8 ways), a 64-entry victim cache (8 sets x 8 ways), and a 33-entry return address stack to handle returns. 
 \subsubsection{Dynamic Objects}
 Very soon after the direct-mapped cache approach was abandoned, the decision was made to design all objects with dynamic sizes, so that we could easily experiment with differently sized caches with no code changes.  Parameterized LRU and Cache objects greatly accelerated all testing and simulation efforts. 
 \subsubsection{Main Cache}
+The main cache was given highest priority in terms of space allocation.  The bold entries in table \ref{sizebydim} (Appendix A) indicate the largest possible configurations our space budget could accommodate.
+
 \subsubsection{Return Address Stack}
 \subsubsection{Victim Cache}
 \section{Size Budget}
@@ -82,5 +90,7 @@ Very soon after the direct-mapped cache approach was abandoned, the decision was
 \section{Results}
 \section{Conclusion}
 \appendix
-the codes
+\onecolumn
+\section{Tables}
+\centertable{\includegraphics[width=6in]{img/sizebydim.png}}{Total space used (in bytes) for various cache dimensions}{sizebydim}\centertable{\includegraphics[width=\columnwidth]{img/sizebudget.png}}{Total size of all project elements}{sizebudget}
 \end{document}
