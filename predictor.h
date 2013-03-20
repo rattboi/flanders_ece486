@@ -1,4 +1,4 @@
-/* Author: Mark Faust
+/* Author: Eric Krause & Bradon Kanyid
  *
  * C version of predictor file
 */
@@ -35,9 +35,9 @@
 
 #define RAS_ENTRIES 33  // max number of elements in RAS stack
 
-#define WEAK_T_LOCAL    5
-#define WEAK_NT_GLOBAL  1
-#define WEAK_LOCAL_PRED 1
+#define ALPHA_LOCAL_INIT  5
+#define ALPHA_GLOBAL_INIT 1
+#define ALPHA_CHOICE_INIT 1
 
 #define SAT_LOCAL  3
 #define SAT_GLOBAL 2

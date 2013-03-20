@@ -10,13 +10,13 @@ ALPHA::ALPHA()
   for (int i = 0; i < SIZE_1K; i++)
   {
     alpha_lht[i] = 0;
-    alpha_lpt[i] = WEAK_T_LOCAL;
+    alpha_lpt[i] = ALPHA_LOCAL_INIT;
   }
 
   for (int i = 0; i < SIZE_4K; i++)
   {
-    alpha_gpt[i]    = WEAK_NT_GLOBAL;
-    alpha_choice[i] = WEAK_LOCAL_PRED; 
+    alpha_gpt[i]    = ALPHA_GLOBAL_INIT;
+    alpha_choice[i] = ALPHA_CHOICE_INIT; 
   }
 
   phistory = 0;
