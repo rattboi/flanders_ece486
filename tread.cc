@@ -34,7 +34,7 @@ cbp_trace_reader_c::cbp_trace_reader_c(char *trace_name){
     char trnm_cmdline[256];
     memset((char *) trace_name_copy,  0, 256);
     memset((char *) trnm_cmdline,  0, 256);
-    // we need the name the name of the trace
+    // we need the name the name of the trace 
     assert(trace_name);
     strcpy(trace_name_copy, trace_name);
     sprintf(trnm_cmdline, "bzip2 -dc %s.bz2", trace_name_copy);
@@ -43,7 +43,7 @@ cbp_trace_reader_c::cbp_trace_reader_c(char *trace_name){
     // initialize op_state
     osptr = new op_state_c();
     osptr->init(osptr);
-    // initialize some scalars
+    // initialize some scalars 
     is_branch_tkn             = false;
     branch_target			  = 0;
     predict_branch_tkn_copy   = false;
@@ -67,19 +67,17 @@ cbp_trace_reader_c::cbp_trace_reader_c(char *trace_name){
 }
 
 cbp_trace_reader_c::~cbp_trace_reader_c(){
-    //printf("*********************************************************\n");
+    printf("*********************************************************\n");
     int   mis_bpreds     = (stat_num_cc_branches - stat_num_correct_bpredicts);
     int   mis_tpreds	 = (stat_num_branches - stat_num_correct_tpredicts);
     float mis_bpred_rate = float(mis_bpreds)/(float(stat_num_insts) / 1000);
     float mis_tpred_rate = float(mis_tpreds)/(float(stat_num_insts) / 1000);
-    //printf("1000*wrong_cc_bpredicts/total insts: 1000 * %8d / %8d = %7.3f\n", mis_bpreds, stat_num_insts, mis_bpred_rate);
-    //printf("1000*wrong_tpredicts/total insts: 1000 * %8d / %8d = %7.3f\n", mis_tpreds, stat_num_insts, mis_tpred_rate);
-    printf("%7.5f\n",mis_bpred_rate);
-    printf("%7.5f\n\n",mis_tpred_rate);
-    //printf("total branches:                  %8d\n", stat_num_branches);
-    //printf("total cc branches:               %8d\n", stat_num_cc_branches);
-    //printf("total predicts:                  %8d\n", stat_num_predicts);
-    //printf("*********************************************************\n");
+    printf("1000*wrong_cc_bpredicts/total insts: 1000 * %8d / %8d = %7.3f\n", mis_bpreds, stat_num_insts, mis_bpred_rate);
+    printf("1000*wrong_tpredicts/total insts: 1000 * %8d / %8d = %7.3f\n", mis_tpreds, stat_num_insts, mis_tpred_rate);    
+    printf("total branches:                  %8d\n", stat_num_branches);
+    printf("total cc branches:               %8d\n", stat_num_cc_branches);
+    printf("total predicts:                  %8d\n", stat_num_predicts);
+    printf("*********************************************************\n");
     cbp_inst_close(from_cbp_inst_stream);
     pclose(from_cbp_trace_file);
     delete osptr;
@@ -177,7 +175,7 @@ bool cbp_trace_reader_c::get_branch_record(branch_record_c *branch_record){
         //op->debug_print();
     }
     assert(cbp_inst.is_branch);
-    // cbp_inst has been populated
+    // cbp_inst has been populated 
     // set branch record
     branch_record->init();
     assert(op);
