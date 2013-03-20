@@ -31,7 +31,7 @@
 #define M_WAYS 8        // number of ways
 
 #define V_ENTRIES 8     // number of entries in victim cache
-#define V_WAYS 8        // number of ways 
+#define V_WAYS 8        // number of ways
 
 #define RAS_ENTRIES 33  // max number of elements in RAS stack
 
@@ -50,8 +50,6 @@
 #define SAT_LOCAL_MAX  7
 #define SAT_GLOBAL_MAX 3
 #define SAT_PRED_MAX   3
-
-using namespace std;
 
 class LRU
 {
@@ -73,7 +71,8 @@ public:
   CACHE(uint entries, uint ways);
   ~CACHE();
   bool predict(const uint32_t addr_idx, uint *predicted_target_address);
-  bool update(const uint32_t addr_idx, uint actual_target_address, uint *evicted_tag, uint *evicted_data);
+  bool update(const uint32_t addr_idx, uint actual_target_address,
+              uint *evicted_tag, uint *evicted_data);
   bool needs_update();
 
 private:
@@ -85,7 +84,8 @@ private:
   int ways;
   int idx_bits;
 
-  LRU *lru;             //separate object to abstract LRU functionality from cache functionality
+  //separate object to abstract LRU functionality from cache functionality
+  LRU *lru;
 };
 
 class RAS
@@ -96,7 +96,7 @@ public:
   bool push_call(uint32_t address);
 
 private:
-  deque<uint>   stack;
+  std::deque<uint>   stack;
   unsigned long stack_size;
 };
 
@@ -110,14 +110,14 @@ public:
 private:
   bool get_local_predict(const uint32_t address);
   bool get_global_predict();
-  bool choose_predictor();  // returns PRED_LOCAL or PRED GLOBAL indicating whether local or global history should be used
+  bool choose_predictor();
 
-  uint16_t alpha_lht[SIZE_1K];     //  local history table     (1024*10)/8    = 1280 bytes
-  uint16_t alpha_lpt[SIZE_1K];     //  local prediction table  (1024*03)/8    = 384 bytes
-  uint16_t alpha_gpt[SIZE_4K];     //  global prediction table (4096*02)/8    = 1024 bytes
-  uint16_t alpha_choice[SIZE_4K];  //  choice prediction table (4096*02)/8    = 1024 bytes
-  uint32_t phistory;               //  path history                           = 1.5 bytes
-                                   //                                   total = 3713.5 bytes
+  uint16_t alpha_lht[SIZE_1K];     //  local history table
+  uint16_t alpha_lpt[SIZE_1K];     //  local prediction table
+  uint16_t alpha_gpt[SIZE_4K];     //  global prediction table
+  uint16_t alpha_choice[SIZE_4K];  //  choice prediction table
+  uint32_t phistory;               //  path history
+
   bool local_prediction;
   bool global_prediction;
 
@@ -129,8 +129,10 @@ class PREDICTOR
 public:
   PREDICTOR();
   ~PREDICTOR();
-  bool get_prediction(const branch_record_c* br, const op_state_c* os, uint *predicted_target_address);
-  void update_predictor(const branch_record_c* br, const op_state_c* os, bool taken, uint actual_target_address);
+  bool get_prediction(const branch_record_c* br, const op_state_c* os,
+                        uint *predicted_target_address);
+  void update_predictor(const branch_record_c* br, const op_state_c* os,
+                        bool taken, uint actual_target_address);
 
 private:
   // Branch Predictor object
