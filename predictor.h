@@ -35,9 +35,9 @@
 
 #define RAS_ENTRIES 33  // max number of elements in RAS stack
 
-#define WEAK_NT_LOCAL  3
-#define WEAK_NT_GLOBAL 1
-#define WEAK_GLOB_PRED 2
+#define WEAK_T_LOCAL    5
+#define WEAK_NT_GLOBAL  1
+#define WEAK_LOCAL_PRED 1
 
 #define SAT_LOCAL  3
 #define SAT_GLOBAL 2
