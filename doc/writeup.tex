@@ -81,10 +81,13 @@ Our final design abandoned all direct-mapped tables and focused on multi-way ass
 \subsubsection{Dynamic Objects}
 Very soon after the direct-mapped cache approach was abandoned, the decision was made to design all objects with dynamic sizes, so that we could easily experiment with differently sized caches with no code changes.  Parameterized LRU and Cache objects greatly accelerated all testing and simulation efforts. 
 \subsubsection{Main Cache}
-The main cache was given highest priority in terms of space allocation.  The bold entries in table \ref{sizebydim} (Appendix A) indicate the largest possible configurations our space budget could accommodate while staying under 4,382 bytes.
-
-\subsubsection{Return Address Stack}
+The main cache was given highest priority in terms of space allocation.  The bold entries in table \ref{sizebydim} (Appendix A) indicate the largest possible configurations we could accommodate while staying under 4,382 bytes.  Table \ref{mispersize} (Appendix A) shows the relative performance  of select cache configurations.\\\\
+Looking at the results from tables \ref{sizebydim} and \ref{mispersize}, the 64-set x 8-way configuration resulted in the best performance under the size constraints of our project.  We also took note of the fact that a 128-set x 4-way had the second best performance but used over 100 bytes less space.  If a problem had arisen that an additional 100 bytes could have solved, we would have made this change, but ultimately this was unnecessary. 
 \subsubsection{Victim Cache}
+The victim cache was given second highest priority in terms of space allocation.  Our goal was to maximize associativity while still leaving some space remaining for the return address stack.\\\\ 
+After deciding to use the 64x8 main cache, we had 542 bytes of space remaining.
+\subsubsection{Return Address Stack}
+
 \section{Size Budget}
 \section{Testing Methodology}
 \section{Results}
@@ -93,6 +96,6 @@ The main cache was given highest priority in terms of space allocation.  The bol
 \onecolumn
 \section{Tables}
 \vspace{-.15in}\centertable{\includegraphics[width=5.25in]{img/sizebydim.png}}{Total space used (in bytes) for various cache dimensions}{sizebydim}
-\vspace{-.35in}\centertable{\includegraphics[width=5.25in]{img/mispersize.png}}{Total space used (in bytes) for various cache dimensions}{mispersize}
+\vspace{-.35in}\centertable{\includegraphics[width=5.25in]{img/mispersize.png}}{Target mispredictions/1000 instructions (Average of FP-1, INT-1, MM-1, and SERV-1 traces)}{mispersize}
 \centertable{\includegraphics[width=\columnwidth]{img/sizebudget.png}}{Total size of all project elements}{sizebudget}
 \end{document}
