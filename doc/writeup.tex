@@ -50,7 +50,7 @@ ECE 486/586 Final Project }
 \lettrine{D}{uplication} of the tournament branch predictor used in the Alpha 21264 processor was the first objective of this project.  We then designed a corresponding branch target predictor.  The size budget for both parts of the project (Alpha predictor and branch target predictor) was 8,096 bytes.  The entire system was then tested against 20 instruction traces from an unknown ISA. \\\\
 There were additional constraints as well: all table sizes had to be powers of 2, multiplying or dividing by numbers other than powers of two was not permitted, and tables with associativity $\ge$ 8 incurred a penalty equal to the size of the table.\\\\
 Our branch predictor was modeled after the predictor described in R. E. Kessler's paper on the Alpha 21264 microprocessor.  Figure \ref{alpha} shows our implementation of the Alpha predictor.  One key difference between our implementation and Kessler's is that our predictor is only called on \textit{conditional branches}, not on all instructions.\\
-\section{Branch Prediction}\centerimage{\includegraphics[width=\columnwidth]{img/phistory.png}}{Path History Shift Register}{phistory}\centerimage{\includegraphics[width=\columnwidth]{img/alpha.png}}{Alpha Predictor}{alpha}
+\section{Branch Prediction}\centerimage{\includegraphics[width=\columnwidth]{img/alpha.png}}{Alpha Predictor}{alpha}\centerimage{\includegraphics[width=\columnwidth]{img/phistory.png}}{Path History Shift Register}{phistory}
 The Alpha predictor is a tournament predictor, meaning that it makes multiple predictions (based on the global and local histories) and then chooses between the prediction that has  been the most accurate, based on the path history.  The path history (illustrated in figure \ref{phistory}) is a shift register that maintains a history of the most recent 12 conditional branches by shifting in 1 or 0 (for taken or not taken branches respectively).\\\\
 Path history is used as an index into the 4,096-entry choice prediction table, which maintains 2-bit saturating counters at each location which indicate whether--given the current path history--the local or global prediction has been more accurate.\\\\  
 The global history table is also indexed using the path history, and consists of 4,096 2-bit saturating counters indicating whether--given the current global path history--the next branch is likely to be taken or not taken.\\\\
@@ -59,7 +59,7 @@ The strength of this design is that it can take advantage of branch patterns occ
 A few implementation details were absent from Kessler's paper, so assumptions were made to create the most accurate predictor possible.  These fell into three categories:  Initialization values for the saturating counters and path history, under what conditions updates should occur, and how to handle unconditional branches (jumps).
 \subsection{Initialization Values}
 To start, everything was initialized to zero. This was to verify that our logic was working correctly. After verifying that things looked like they were working, we decided to see if tuning these parameters would have a major effect on our performance. Zeros would imply that our default state should be strongly not taken for both the local and global predictors, and strongly favoring the local predictor for the choice predictor.\\\\
-For the initial states of each predictor, iteration through each value was possible. Doing so, we determined that locally weakly taken, globally weakly not taken, and choice weakly local gave best performance across all 20 benchmarks. \\\\
+For the initial states of each predictor, iteration through each value was possible. Doing so, we determined that locally weakly taken, globally weakly not taken, and choice weakly local gave best performance across all 20 benchmarks.
 \subsection{Unconditional Branches}
 The Alpha predictor on a hardware implementation would be used on every fetch, but in this simulation our predictor is only used for branches. Predictions are only neccessary for conditional branches, as unconditional branches are by definition always taken.
 \subsection{Conditional Updates}
@@ -93,8 +93,13 @@ The return address stack was much more flexible in terms of its size, since we w
 \section{Size Budget}
 Our final design occupies 8,191 of the 8,192 available bytes. Table \ref{sizebudget} illustrates the exact breakdown of all elements in our project and their component parts, as well as the calculations to obtain these sizes.  We thought about encoding a snarky message in the leftover space, but all we could fit was \texttt{0xA5}.
 \section{Testing Methodology}
+
+
 \section{Results}
+The results of running the 20 provided traces are shown in table \ref{results}
+\centertable{\includegraphics[width=2.5in]{img/results.png}}{Branch and target misprediction rates (per 1,000 branches)}{results}
 \section{Conclusion}
+
 \appendix
 \onecolumn
 \section{Tables}
