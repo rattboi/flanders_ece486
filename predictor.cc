@@ -25,15 +25,15 @@ ALPHA::ALPHA()
 bool ALPHA::get_local_predict(const uint32_t address)
 {
   uint16_t alpha_lht_ind = (uint16_t) address;
-  uint16_t curr = alpha_lht[alpha_lht_ind];
-  uint16_t pred_bits = alpha_lpt[curr];
+  uint16_t lphistory = alpha_lht[alpha_lht_ind];
+  uint16_t pred_bits = alpha_lpt[lphistory];
 
-  return (pred_bits >> (SAT_LOCAL - 1));
+  return (pred_bits >> (SAT_LOCAL_BITS - 1));
 }
 
 bool ALPHA::get_global_predict()
 {
-  return (alpha_gpt[phistory] >> (SAT_GLOBAL - 1));
+  return (alpha_gpt[phistory] >> (SAT_GLOBAL_BITS - 1));
 }
 
 // return of PRED_LOCAL means use local history
@@ -44,7 +44,7 @@ bool ALPHA::choose_predictor()
   // current alpha_choice entry, indexed by path history
   curr_alpha_choice_entry = alpha_choice[phistory];
   // only care about bit 1 of saturating counter
-  return ( curr_alpha_choice_entry >> (SAT_PRED - 1));
+  return ( curr_alpha_choice_entry >> (SAT_PRED_BITS - 1));
 }
 
 bool ALPHA::get_prediction(const branch_record_c* br)
@@ -80,17 +80,17 @@ void ALPHA::update(const branch_record_c* br, bool taken)
   // damn you, verilog, for being so nice!
   switch(((global_prediction == taken)<<1)|(local_prediction == taken))
   {
-    case 0:
+    case 0: //both predictors are wrong, no update
       break;
-    case 1:
+    case 1: //predictors are different, local++
       if (alpha_choice[phistory] > SAT_PRED_MIN) alpha_choice[phistory]--;
       break;
-    case 2:
+    case 2: //predictors are different, global++
       if (alpha_choice[phistory] < SAT_PRED_MAX) alpha_choice[phistory]++;
       break;
-    case 3:
+    case 3: //both predictors are right, no update
       break;
-    default:
+    default: //this never happens, makes the compiler shut up
       ;
   }
 
@@ -110,12 +110,12 @@ PREDICTOR::PREDICTOR()
 PREDICTOR::~PREDICTOR()
 {
   delete maincache;
+  delete victimcache;
 }
 
 bool PREDICTOR::get_prediction(const branch_record_c* br, const op_state_c* os,
                                 uint *predicted_target_address)
 {
-
   //  TARGET PREDICTION
   bool main_miss;
 
@@ -189,7 +189,7 @@ bool RAS::push_call(uint address)
 {
   stack.push_front(address);
 
-  if (stack.size() == stack_size)
+  if (stack.size() > stack_size)
   {
     stack.pop_back();
     return false;
@@ -295,6 +295,7 @@ bool CACHE::update(const uint32_t addr_idx, uint actual_target_address,
   //else, we need to evict
   uint victim = lru->get_victim( PC_LOWER );
 
+  // used for pointer safety, needed for maincache->victimcache
   if (evicted_tag && evicted_data)
   {
     *evicted_tag = (((tag[PC_LOWER][victim])<<idx_bits) | PC_LOWER);

@@ -39,9 +39,9 @@
 #define ALPHA_GLOBAL_INIT 1
 #define ALPHA_CHOICE_INIT 1
 
-#define SAT_LOCAL  3
-#define SAT_GLOBAL 2
-#define SAT_PRED   2
+#define SAT_LOCAL_BITS  3
+#define SAT_GLOBAL_BITS 2
+#define SAT_PRED_BITS   2
 
 #define SAT_LOCAL_MIN  0
 #define SAT_GLOBAL_MIN 0
